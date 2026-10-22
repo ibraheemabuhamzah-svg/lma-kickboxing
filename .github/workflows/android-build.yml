@@ -29,6 +29,24 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Ensure stable debug keystore
+        run: |
+          if [ ! -f app/debug.keystore ]; then
+            keytool -genkeypair -v -keystore app/debug.keystore -storepass android -keypass android \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=LMA KickBoxing, OU=Development, O=LMA, L=Dubai, S=Dubai, C=AE"
+            echo "keystore_generated=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit generated keystore
+        if: env.keystore_generated == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/debug.keystore
+          git commit -m "Add stable debug keystore for consistent APK signing"
+          git push
+
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 

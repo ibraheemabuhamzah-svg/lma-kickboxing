@@ -15,6 +15,20 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        getByName("debug") {
+            // Pinned so every CI build (and every machine) produces the same
+            // signature — otherwise each new APK conflicts with previously
+            // installed ones ("App not installed: conflict with an existing
+            // package") since Android requires matching signing certs to
+            // install over an app with the same applicationId.
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
