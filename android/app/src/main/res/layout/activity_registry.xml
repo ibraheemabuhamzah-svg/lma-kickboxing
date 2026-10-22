@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:tabMode="scrollable"
+        app:tabIndicatorColor="@color/red"
+        app:tabSelectedTextColor="@color/ink"
+        app:tabTextColor="@color/muted"
+        android:background="@color/card" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <include android:id="@+id/panelDashboard" layout="@layout/panel_dashboard" />
+            <include android:id="@+id/panelStudents" layout="@layout/panel_students" />
+            <include android:id="@+id/panelRevenue" layout="@layout/panel_revenue" />
+            <include android:id="@+id/panelTrends" layout="@layout/panel_trends" />
+
+        </FrameLayout>
+    </ScrollView>
+</LinearLayout>

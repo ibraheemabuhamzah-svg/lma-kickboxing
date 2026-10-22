@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/tvFormTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Create your profile"
+            android:textColor="@color/ink"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <TextView style="@style/SectionLabel" android:text="IDENTITY" />
+
+        <EditText android:id="@+id/editFirstName" style="@style/FormInput" android:hint="First name" />
+        <EditText android:id="@+id/editLastName" style="@style/FormInput" android:hint="Last name" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Date of birth" android:textStyle="bold" android:textSize="13sp" android:layout_marginTop="8dp" />
+        <Button android:id="@+id/btnDob" style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent" android:layout_height="48dp"
+            android:text="Select date" android:textAllCaps="false" android:layout_marginBottom="12dp" />
+
+        <RadioGroup android:id="@+id/radioGender" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginBottom="16dp">
+            <RadioButton android:id="@+id/radioMale" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Male" />
+            <RadioButton android:id="@+id/radioFemale" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Female" android:layout_marginStart="24dp" />
+        </RadioGroup>
+
+        <TextView style="@style/SectionLabel" android:text="CONTACT" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Personal phone number" android:textStyle="bold" android:textSize="13sp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+            <Spinner android:id="@+id/spinnerPrefix" android:layout_width="140dp" android:layout_height="48dp" />
+            <EditText android:id="@+id/editPhoneNumber" style="@style/FormInput" android:layout_width="0dp" android:layout_weight="1" android:layout_marginBottom="0dp" android:inputType="phone" android:hint="Phone number" />
+        </LinearLayout>
+
+        <EditText android:id="@+id/editWhatsapp" style="@style/FormInput" android:hint="WhatsApp number" android:inputType="phone" />
+        <EditText android:id="@+id/editEmergencyName" style="@style/FormInput" android:hint="Emergency contact name" />
+        <EditText android:id="@+id/editEmergencyPhone" style="@style/FormInput" android:hint="Emergency contact phone" android:inputType="phone" />
+
+        <TextView style="@style/SectionLabel" android:text="TRAINING" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Class" android:textStyle="bold" android:textSize="13sp" />
+        <RadioGroup android:id="@+id/radioClass" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="12dp">
+            <RadioButton android:id="@+id/radioGirls" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Girls Only" />
+            <RadioButton android:id="@+id/radioKids" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Kids" />
+            <RadioButton android:id="@+id/radioTeensAdults" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Teens &amp; Adults" />
+        </RadioGroup>
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Payment type" android:textStyle="bold" android:textSize="13sp" />
+        <Spinner android:id="@+id/spinnerPayment" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginBottom="12dp" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Training experience" android:textStyle="bold" android:textSize="13sp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+            <EditText android:id="@+id/editYears" style="@style/FormInput" android:layout_width="0dp" android:layout_weight="1" android:layout_marginEnd="8dp" android:hint="Years" android:inputType="number" android:layout_marginBottom="0dp" />
+            <EditText android:id="@+id/editMonths" style="@style/FormInput" android:layout_width="0dp" android:layout_weight="1" android:hint="Months" android:inputType="number" android:layout_marginBottom="0dp" />
+        </LinearLayout>
+
+        <TextView style="@style/SectionLabel" android:text="GRADE" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Your belt/grade can only be set by a coach in the Registry." android:textColor="@color/muted" android:textSize="12sp" android:layout_marginBottom="6dp" />
+        <TextView android:id="@+id/tvGradeBadge" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="White Belt" android:textColor="@color/white" android:background="@drawable/bg_badge"
+            android:paddingHorizontal="12dp" android:paddingVertical="4dp" android:textSize="12sp" android:textStyle="bold" />
+
+        <TextView style="@style/SectionLabel" android:text="SELFIE (OPTIONAL)" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+            <ImageView android:id="@+id/imgSelfie" android:layout_width="64dp" android:layout_height="64dp"
+                android:background="@drawable/bg_avatar" android:scaleType="centerCrop" android:layout_marginEnd="16dp" />
+            <Button android:id="@+id/btnPickSelfie" style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Choose photo" android:textAllCaps="false" />
+        </LinearLayout>
+
+        <Button android:id="@+id/btnSave" style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="24dp"
+            android:backgroundTint="@color/red" android:text="Save profile" android:textAllCaps="false" />
+
+    </LinearLayout>
+</ScrollView>

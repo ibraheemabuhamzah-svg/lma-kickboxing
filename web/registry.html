@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Registry — LMA Muay Thai &amp; KickBoxing</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <img src="assets/logo.jpeg" alt="LMA logo" />
+  <h1>LMA Muay Thai &amp; KickBoxing — Registry</h1>
+  <div class="spacer"></div>
+  <a href="index.html">Member Area</a>
+</div>
+
+<div class="container">
+
+  <!-- Password gate -->
+  <div class="center-screen" id="gateScreen">
+    <div class="card lock-card">
+      <div class="icon">🔒</div>
+      <h2>Registry Access</h2>
+      <p class="hint">Enter the coach password to continue.</p>
+      <div class="field" style="text-align:left">
+        <input type="password" id="gatePassword" placeholder="Password" />
+      </div>
+      <div id="gateError"></div>
+      <div class="actions" style="justify-content:center">
+        <button id="gateBtn">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main registry content -->
+  <div id="registryContent" style="display:none">
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+      <button class="tab-btn" data-tab="students">Students</button>
+      <button class="tab-btn" data-tab="revenue">Revenue Entry</button>
+      <button class="tab-btn" data-tab="trends">Schedule &amp; Weekly Trends</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="tab-panel active" id="panel-dashboard">
+      <div class="stat-grid" id="statTiles"></div>
+
+      <div class="card">
+        <h2>Monthly Revenue Evolution</h2>
+        <div class="chart-wrap tall"><canvas id="chartMonthlyRevenue"></canvas></div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Students by Age</h2>
+          <div class="chart-wrap"><canvas id="chartAge"></canvas></div>
+        </div>
+        <div class="card">
+          <h2>Students by Seniority</h2>
+          <div class="chart-wrap"><canvas id="chartSeniority"></canvas></div>
+        </div>
+        <div class="card">
+          <h2>Students by Payment Type</h2>
+          <div class="chart-wrap"><canvas id="chartPayment"></canvas></div>
+        </div>
+        <div class="card">
+          <h2>Students by Grade</h2>
+          <div class="chart-wrap"><canvas id="chartGrade"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="tab-panel" id="panel-students">
+      <div class="card">
+        <h2>Students</h2>
+        <div class="filters">
+          <input type="text" id="studentSearch" placeholder="Search name or phone..." />
+          <select id="filterClass"><option value="">All classes</option></select>
+          <select id="filterPayment"><option value="">All payment types</option></select>
+          <select id="filterGrade"><option value="">All grades</option></select>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="studentsTable">
+            <thead>
+              <tr>
+                <th>Name</th><th>Phone</th><th>Age</th><th>Class</th>
+                <th>Payment</th><th>Seniority</th><th>Grade</th><th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="studentDetail" style="display:none"></div>
+    </div>
+
+    <!-- REVENUE ENTRY -->
+    <div class="tab-panel" id="panel-revenue">
+      <div class="card">
+        <h2>Enter Today's Session</h2>
+        <p class="hint">Log revenue (and headcount) right after a class so weekly trends stay accurate.</p>
+        <form id="revenueForm">
+          <div class="grid cols-3">
+            <div class="field">
+              <label>Date</label>
+              <input type="date" id="revDate" required />
+            </div>
+            <div class="field">
+              <label>Class / session</label>
+              <select id="revClass" required></select>
+            </div>
+            <div class="field">
+              <label>Amount collected</label>
+              <input type="number" id="revAmount" min="0" step="0.01" required />
+            </div>
+          </div>
+          <div class="grid">
+            <div class="field">
+              <label>Number of students present</label>
+              <input type="number" id="revCount" min="0" />
+            </div>
+            <div class="field">
+              <label>Note (optional)</label>
+              <input type="text" id="revNote" />
+            </div>
+          </div>
+          <div class="actions"><button type="submit">Save entry</button></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Recent Entries</h2>
+        <div style="overflow-x:auto">
+          <table id="revenueTable">
+            <thead><tr><th>Date</th><th>Session</th><th>Students</th><th>Amount</th><th>Note</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE & TRENDS -->
+    <div class="tab-panel" id="panel-trends">
+      <div class="card">
+        <h2>Weekly Class Schedule</h2>
+        <table>
+          <thead><tr><th>Day</th><th>Time</th><th>Class</th></tr></thead>
+          <tbody id="scheduleBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Class-by-Class, Week-over-Week Evolution</h2>
+        <div class="filters">
+          <select id="trendClass"></select>
+        </div>
+        <h3>Students per session (by week)</h3>
+        <div class="chart-wrap"><canvas id="chartClassStudents"></canvas></div>
+        <h3>Revenue per session (by week)</h3>
+        <div class="chart-wrap"><canvas id="chartClassRevenue"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer class="note">LMA Muay Thai &amp; KickBoxing &mdash; Registry (coach access only).</footer>
+
+<script src="js/vendor/chart.umd.min.js"></script>
+<script src="js/constants.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/registry.js"></script>
+</body>
+</html>

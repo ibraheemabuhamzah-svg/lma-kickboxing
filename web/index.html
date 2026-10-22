@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LMA Muay Thai &amp; KickBoxing</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <img src="assets/logo.jpeg" alt="LMA logo" />
+  <h1>LMA Muay Thai &amp; KickBoxing</h1>
+  <div class="spacer"></div>
+  <a href="registry.html">Registry</a>
+</div>
+
+<div class="container">
+
+  <div id="alertBox"></div>
+
+  <!-- Step 1: lookup by phone -->
+  <div class="card" id="lookupCard">
+    <h2>Find or create your profile</h2>
+    <p class="hint">Enter your personal phone number to load your profile, or create a new one.</p>
+    <div class="lookup-box">
+      <div class="field" style="flex: 0 0 150px; min-width: 130px;">
+        <label>Prefix</label>
+        <select id="lookupPrefix"></select>
+      </div>
+      <div class="field">
+        <label>Phone number</label>
+        <input type="tel" id="lookupNumber" placeholder="e.g. 501234567" />
+      </div>
+      <div>
+        <button id="lookupBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: profile view (existing member) -->
+  <div class="card" id="viewCard" style="display:none">
+    <div class="profile-header">
+      <img id="viewSelfie" src="" alt="" />
+      <div>
+        <div class="name" id="viewName"></div>
+        <div class="meta" id="viewMeta"></div>
+      </div>
+      <div class="spacer"></div>
+      <span class="badge" id="viewGrade"></span>
+    </div>
+    <div class="pill-row" id="viewPills"></div>
+    <div class="actions">
+      <button class="secondary" id="editBtn">Edit profile</button>
+      <button class="ghost" id="backBtn">&larr; Back</button>
+    </div>
+  </div>
+
+  <!-- Step 3: profile form (create / edit) -->
+  <form class="card" id="profileForm" style="display:none">
+    <h2 id="formTitle">Create your profile</h2>
+
+    <h3>Identity</h3>
+    <div class="grid">
+      <div class="field">
+        <label>First name</label>
+        <input type="text" id="firstName" required />
+      </div>
+      <div class="field">
+        <label>Last name</label>
+        <input type="text" id="lastName" required />
+      </div>
+    </div>
+    <div class="grid">
+      <div class="field">
+        <label>Date of birth</label>
+        <input type="date" id="dob" required />
+      </div>
+      <div class="field">
+        <label>Gender</label>
+        <div class="radio-group">
+          <label><input type="radio" name="gender" value="male" required /> Male</label>
+          <label><input type="radio" name="gender" value="female" /> Female</label>
+        </div>
+      </div>
+    </div>
+
+    <h3>Contact</h3>
+    <div class="grid">
+      <div class="field">
+        <label>Personal phone number</label>
+        <div class="phone-row">
+          <select id="formPrefix"></select>
+          <input type="tel" id="formNumber" required />
+        </div>
+      </div>
+      <div class="field">
+        <label>WhatsApp number</label>
+        <input type="tel" id="whatsapp" />
+      </div>
+    </div>
+    <div class="grid">
+      <div class="field">
+        <label>Emergency contact name</label>
+        <input type="text" id="emergencyName" required />
+      </div>
+      <div class="field">
+        <label>Emergency contact phone</label>
+        <input type="tel" id="emergencyPhone" required />
+      </div>
+    </div>
+
+    <h3>Training</h3>
+    <div class="field">
+      <label>Class</label>
+      <div class="class-group" id="classGroup"></div>
+    </div>
+    <div class="grid">
+      <div class="field">
+        <label>Payment type</label>
+        <select id="paymentType"></select>
+      </div>
+      <div class="field">
+        <label>Training experience</label>
+        <div style="display:flex; gap:8px;">
+          <input type="number" id="trainingYears" min="0" placeholder="Years" />
+          <input type="number" id="trainingMonths" min="0" max="11" placeholder="Months" />
+        </div>
+      </div>
+    </div>
+
+    <h3>Grade</h3>
+    <p class="hint">Your belt/grade can only be set by a coach in the Registry.</p>
+    <span class="badge" id="formGradeBadge">White Belt</span>
+
+    <h3>Selfie (optional)</h3>
+    <div class="selfie-row">
+      <img id="selfiePreview" class="selfie-preview" src="" alt="" />
+      <input type="file" id="selfieInput" accept="image/*" />
+    </div>
+
+    <div class="actions">
+      <button type="submit">Save profile</button>
+      <button type="button" class="ghost" id="cancelFormBtn">Cancel</button>
+    </div>
+  </form>
+
+</div>
+
+<footer class="note">LMA Muay Thai &amp; KickBoxing &mdash; data is stored locally on this device.</footer>
+
+<script src="js/constants.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

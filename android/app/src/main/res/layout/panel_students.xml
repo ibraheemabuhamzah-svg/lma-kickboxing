@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootStudents"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:visibility="gone">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:background="@drawable/bg_card" android:padding="16dp">
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Students" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" android:layout_marginBottom="10dp" />
+
+        <EditText android:id="@+id/editSearch" style="@style/FormInput" android:hint="Search name or phone..." />
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+            <Spinner android:id="@+id/spinnerFilterClass" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" />
+            <Spinner android:id="@+id/spinnerFilterPayment" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" />
+            <Spinner android:id="@+id/spinnerFilterGrade" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/studentsList" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+
+        <TextView android:id="@+id/tvNoStudents" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="No students found." android:textColor="@color/muted" android:textSize="13sp" android:visibility="gone" />
+
+    </LinearLayout>
+</LinearLayout>

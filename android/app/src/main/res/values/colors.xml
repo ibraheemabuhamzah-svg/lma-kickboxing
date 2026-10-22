@@ -1,0 +1,21 @@
+<resources>
+    <color name="red">#E30613</color>
+    <color name="red_dark">#B4050F</color>
+    <color name="black">#111113</color>
+    <color name="ink">#1C1C1F</color>
+    <color name="muted">#6B6B73</color>
+    <color name="line">#E7E7EA</color>
+    <color name="bg">#F6F6F8</color>
+    <color name="card">#FFFFFF</color>
+    <color name="white">#FFFFFF</color>
+
+    <color name="grade_white">#9A9A9A</color>
+    <color name="grade_red">#E30613</color>
+    <color name="grade_yellow">#E6B800</color>
+    <color name="grade_orange">#E8791A</color>
+    <color name="grade_green">#2E9E4B</color>
+    <color name="grade_blue">#1565C0</color>
+    <color name="grade_purple">#7B3FA0</color>
+    <color name="grade_brown">#6B4226</color>
+    <color name="grade_black">#111113</color>
+</resources>

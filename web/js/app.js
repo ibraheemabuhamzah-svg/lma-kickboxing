@@ -1,0 +1,172 @@
+// Member-facing profile page logic
+
+let currentMember = null; // member being viewed/edited
+let selfieData = null;
+
+function showAlert(msg, type) {
+  const box = document.getElementById('alertBox');
+  box.innerHTML = `<div class="alert ${type}">${msg}</div>`;
+  setTimeout(() => { box.innerHTML = ''; }, 4000);
+}
+
+function fillPrefixSelect(select) {
+  select.innerHTML = DIAL_CODES.map(d => `<option value="${d.code}">${d.code} ${d.country}</option>`).join('');
+}
+
+function showScreen(name) {
+  document.getElementById('lookupCard').style.display = name === 'lookup' ? '' : 'none';
+  document.getElementById('viewCard').style.display = name === 'view' ? '' : 'none';
+  document.getElementById('profileForm').style.display = name === 'form' ? '' : 'none';
+}
+
+function renderView(member) {
+  currentMember = member;
+  document.getElementById('viewSelfie').src = member.selfie || PLACEHOLDER_AVATAR;
+  document.getElementById('viewName').textContent = `${member.firstName} ${member.lastName}`;
+  document.getElementById('viewMeta').textContent = `${member.phonePrefix} ${member.phoneNumber} · Born ${formatDob(member.dob)}`;
+  const badge = document.getElementById('viewGrade');
+  badge.textContent = gradeLabel(member.grade);
+  badge.className = `badge ${member.grade || 'white'}`;
+
+  const pills = document.getElementById('viewPills');
+  pills.innerHTML = [
+    classLabel(member.class),
+    paymentLabel(member.paymentType),
+    member.gender === 'female' ? 'Female' : 'Male',
+    `${member.trainingYears || 0}y ${member.trainingMonths || 0}m training`,
+  ].map(t => `<span class="badge" style="background:#eceef1;color:#444">${t}</span>`).join('');
+
+  showScreen('view');
+}
+
+function resetForm() {
+  document.getElementById('profileForm').reset();
+  selfieData = null;
+  document.getElementById('selfiePreview').src = PLACEHOLDER_AVATAR;
+  document.getElementById('formGradeBadge').textContent = 'White Belt';
+  document.getElementById('formGradeBadge').className = 'badge white';
+}
+
+function fillFormFromMember(member) {
+  resetForm();
+  document.getElementById('formTitle').textContent = 'Edit your profile';
+  document.getElementById('firstName').value = member.firstName || '';
+  document.getElementById('lastName').value = member.lastName || '';
+  document.getElementById('dob').value = member.dob || '';
+  if (member.gender) {
+    const r = document.querySelector(`input[name=gender][value=${member.gender}]`);
+    if (r) r.checked = true;
+  }
+  document.getElementById('formPrefix').value = member.phonePrefix || '+971';
+  document.getElementById('formNumber').value = member.phoneNumber || '';
+  document.getElementById('whatsapp').value = member.whatsapp || '';
+  document.getElementById('emergencyName').value = member.emergencyName || '';
+  document.getElementById('emergencyPhone').value = member.emergencyPhone || '';
+  document.getElementById('paymentType').value = member.paymentType || 'payg';
+  document.getElementById('trainingYears').value = member.trainingYears || 0;
+  document.getElementById('trainingMonths').value = member.trainingMonths || 0;
+  if (member.class) {
+    const c = document.querySelector(`input[name=classKey][value=${member.class}]`);
+    if (c) c.checked = true;
+  }
+  selfieData = member.selfie || null;
+  document.getElementById('selfiePreview').src = selfieData || PLACEHOLDER_AVATAR;
+  const badge = document.getElementById('formGradeBadge');
+  badge.textContent = gradeLabel(member.grade);
+  badge.className = `badge ${member.grade || 'white'}`;
+}
+
+function init() {
+  fillPrefixSelect(document.getElementById('lookupPrefix'));
+  fillPrefixSelect(document.getElementById('formPrefix'));
+  document.getElementById('formPrefix').value = '+971';
+  document.getElementById('lookupPrefix').value = '+971';
+
+  document.getElementById('paymentType').innerHTML =
+    PAYMENT_TYPES.map(p => `<option value="${p.key}">${p.label}</option>`).join('');
+
+  document.getElementById('classGroup').innerHTML = CLASSES.map(c =>
+    `<label><input type="radio" name="classKey" value="${c.key}" required /> ${c.label}</label>`
+  ).join('');
+
+  document.getElementById('selfiePreview').src = PLACEHOLDER_AVATAR;
+
+  document.getElementById('lookupBtn').addEventListener('click', () => {
+    const prefix = document.getElementById('lookupPrefix').value;
+    const number = document.getElementById('lookupNumber').value.trim();
+    if (!number) { showAlert('Please enter a phone number.', 'error'); return; }
+    const member = getMemberByPhone(prefix, number);
+    if (member) {
+      renderView(member);
+    } else {
+      resetForm();
+      document.getElementById('formTitle').textContent = 'Create your profile';
+      document.getElementById('formPrefix').value = prefix;
+      document.getElementById('formNumber').value = number;
+      currentMember = null;
+      showScreen('form');
+    }
+  });
+
+  document.getElementById('editBtn').addEventListener('click', () => {
+    fillFormFromMember(currentMember);
+    showScreen('form');
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    currentMember = null;
+    showScreen('lookup');
+  });
+
+  document.getElementById('cancelFormBtn').addEventListener('click', () => {
+    if (currentMember) { renderView(currentMember); } else { showScreen('lookup'); }
+  });
+
+  document.getElementById('selfieInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      selfieData = reader.result;
+      document.getElementById('selfiePreview').src = selfieData;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('profileForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const gender = document.querySelector('input[name=gender]:checked');
+    const classKey = document.querySelector('input[name=classKey]:checked');
+    const member = {
+      id: currentMember ? currentMember.id : undefined,
+      firstName: document.getElementById('firstName').value.trim(),
+      lastName: document.getElementById('lastName').value.trim(),
+      dob: document.getElementById('dob').value,
+      gender: gender ? gender.value : '',
+      phonePrefix: document.getElementById('formPrefix').value,
+      phoneNumber: document.getElementById('formNumber').value.trim(),
+      whatsapp: document.getElementById('whatsapp').value.trim(),
+      emergencyName: document.getElementById('emergencyName').value.trim(),
+      emergencyPhone: document.getElementById('emergencyPhone').value.trim(),
+      class: classKey ? classKey.value : '',
+      paymentType: document.getElementById('paymentType').value,
+      trainingYears: parseInt(document.getElementById('trainingYears').value, 10) || 0,
+      trainingMonths: parseInt(document.getElementById('trainingMonths').value, 10) || 0,
+      selfie: selfieData,
+      grade: currentMember ? currentMember.grade : 'white',
+    };
+
+    // prevent duplicate phone numbers across different members
+    const existing = getMemberByPhone(member.phonePrefix, member.phoneNumber);
+    if (existing && (!currentMember || existing.id !== currentMember.id)) {
+      showAlert('A profile already exists with this phone number.', 'error');
+      return;
+    }
+
+    const saved = upsertMember(member);
+    showAlert('Profile saved successfully.', 'success');
+    renderView(saved);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);

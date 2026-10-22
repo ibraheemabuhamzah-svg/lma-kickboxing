@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootDashboard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="16dp">
+            <TextView android:id="@+id/tvTotalStudents" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total Students" android:textSize="12sp" android:textColor="@color/muted" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="16dp">
+            <TextView android:id="@+id/tvMonthRevenue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Revenue This Month" android:textSize="12sp" android:textColor="@color/muted" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="16dp">
+            <TextView android:id="@+id/tvTotalRevenue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total Revenue" android:textSize="12sp" android:textColor="@color/muted" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="16dp">
+            <TextView android:id="@+id/tvSessionsLogged" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sessions Logged" android:textSize="12sp" android:textColor="@color/muted" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:background="@drawable/bg_card" android:padding="16dp" android:layout_marginBottom="16dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Monthly Revenue Evolution" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" android:layout_marginBottom="8dp" />
+        <com.lma.kickboxing.widgets.LineChartView android:id="@+id/chartMonthlyRevenue" android:layout_width="match_parent" android:layout_height="220dp" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:background="@drawable/bg_card" android:padding="16dp" android:layout_marginBottom="16dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Students by Age" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" android:layout_marginBottom="8dp" />
+        <com.lma.kickboxing.widgets.BarChartView android:id="@+id/chartAge" android:layout_width="match_parent" android:layout_height="200dp" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:background="@drawable/bg_card" android:padding="16dp" android:layout_marginBottom="16dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Students by Seniority" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" android:layout_marginBottom="8dp" />
+        <com.lma.kickboxing.widgets.BarChartView android:id="@+id/chartSeniority" android:layout_width="match_parent" android:layout_height="200dp" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:background="@drawable/bg_card" android:padding="16dp" android:layout_marginBottom="16dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Students by Payment Type" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" android:layout_marginBottom="8dp" />
+        <com.lma.kickboxing.widgets.BarChartView android:id="@+id/chartPayment" android:layout_width="match_parent" android:layout_height="200dp" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:background="@drawable/bg_card" android:padding="16dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Students by Grade" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" android:layout_marginBottom="8dp" />
+        <com.lma.kickboxing.widgets.BarChartView android:id="@+id/chartGrade" android:layout_width="match_parent" android:layout_height="200dp" />
+    </LinearLayout>
+
+</LinearLayout>
