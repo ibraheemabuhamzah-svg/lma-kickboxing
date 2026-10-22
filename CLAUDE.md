@@ -25,7 +25,7 @@ Each member can create/edit their own profile. Fields:
 | WhatsApp number | |
 | Emergency contact | Phone number **and** contact person's name |
 | Class | Girls Only / Kids / Teens & Adults |
-| Payment type | Pay as you go / Monthly membership / Transfer |
+| Payment type | Pay as you go / Monthly membership / Transfer / Free |
 | Selfie photo | Optional (stored as base64 in localStorage) |
 | Training experience | Number of years + number of months |
 | **Grade/Belt** | White, Red, Yellow, Orange, Green, Blue, Purple, Brown, Black belt — **editable only from the admin Registry, never by the member themselves** |
@@ -45,7 +45,7 @@ Member-facing profile form must NOT expose the grade/belt field for editing — 
 1. **Student counts**, broken down by:
    - Age (computed from date of birth, grouped into bands)
    - Seniority / time training (years + months grouped into bands)
-   - Payment type (Pay as you go / Monthly membership / Transfer)
+   - Payment type (Pay as you go / Monthly membership / Transfer / Free)
    - Grade/belt
 2. **Trends over time** (clear charts):
    - Evolution of the above counts over time

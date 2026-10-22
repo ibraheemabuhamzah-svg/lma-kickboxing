@@ -27,6 +27,7 @@ object Constants {
         Option("payg", "Pay as you go"),
         Option("monthly", "Monthly membership"),
         Option("transfer", "Transfer"),
+        Option("free", "Free"),
     )
 
     val ROLES = listOf(

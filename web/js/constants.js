@@ -22,6 +22,7 @@ const PAYMENT_TYPES = [
   { key: 'payg', label: 'Pay as you go' },
   { key: 'monthly', label: 'Monthly membership' },
   { key: 'transfer', label: 'Transfer' },
+  { key: 'free', label: 'Free' },
 ];
 
 const ROLES = [
