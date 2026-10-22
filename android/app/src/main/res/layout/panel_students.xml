@@ -14,8 +14,12 @@
 
         <EditText android:id="@+id/editSearch" style="@style/FormInput" android:hint="Search name or phone..." />
 
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp">
+            <Spinner android:id="@+id/spinnerFilterRole" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" />
             <Spinner android:id="@+id/spinnerFilterClass" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
             <Spinner android:id="@+id/spinnerFilterPayment" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" />
             <Spinner android:id="@+id/spinnerFilterGrade" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" />
         </LinearLayout>

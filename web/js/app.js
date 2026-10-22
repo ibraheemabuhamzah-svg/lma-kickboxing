@@ -30,6 +30,7 @@ function renderView(member) {
 
   const pills = document.getElementById('viewPills');
   pills.innerHTML = [
+    roleLabel(member.role),
     classLabel(member.class),
     paymentLabel(member.paymentType),
     member.gender === 'female' ? 'Female' : 'Male',
@@ -45,11 +46,15 @@ function resetForm() {
   document.getElementById('selfiePreview').src = PLACEHOLDER_AVATAR;
   document.getElementById('formGradeBadge').textContent = 'White Belt';
   document.getElementById('formGradeBadge').className = 'badge white';
+  const defaultRole = document.querySelector('input[name=role][value=student]');
+  if (defaultRole) defaultRole.checked = true;
 }
 
 function fillFormFromMember(member) {
   resetForm();
   document.getElementById('formTitle').textContent = 'Edit your profile';
+  const r = document.querySelector(`input[name=role][value=${member.role || 'student'}]`);
+  if (r) r.checked = true;
   document.getElementById('firstName').value = member.firstName || '';
   document.getElementById('lastName').value = member.lastName || '';
   document.getElementById('dob').value = member.dob || '';
@@ -87,6 +92,10 @@ function init() {
 
   document.getElementById('classGroup').innerHTML = CLASSES.map(c =>
     `<label><input type="radio" name="classKey" value="${c.key}" required /> ${c.label}</label>`
+  ).join('');
+
+  document.getElementById('roleGroup').innerHTML = ROLES.map(r =>
+    `<label><input type="radio" name="role" value="${r.key}" ${r.key === 'student' ? 'checked' : ''} /> ${r.label}</label>`
   ).join('');
 
   document.getElementById('selfiePreview').src = PLACEHOLDER_AVATAR;
@@ -137,8 +146,10 @@ function init() {
     e.preventDefault();
     const gender = document.querySelector('input[name=gender]:checked');
     const classKey = document.querySelector('input[name=classKey]:checked');
+    const role = document.querySelector('input[name=role]:checked');
     const member = {
       id: currentMember ? currentMember.id : undefined,
+      role: role ? role.value : 'student',
       firstName: document.getElementById('firstName').value.trim(),
       lastName: document.getElementById('lastName').value.trim(),
       dob: document.getElementById('dob').value,

@@ -78,6 +78,7 @@
         <h2>Students</h2>
         <div class="filters">
           <input type="text" id="studentSearch" placeholder="Search name or phone..." />
+          <select id="filterRole"><option value="">All statuses</option></select>
           <select id="filterClass"><option value="">All classes</option></select>
           <select id="filterPayment"><option value="">All payment types</option></select>
           <select id="filterGrade"><option value="">All grades</option></select>
@@ -86,7 +87,7 @@
           <table id="studentsTable">
             <thead>
               <tr>
-                <th>Name</th><th>Phone</th><th>Age</th><th>Class</th>
+                <th>Name</th><th>Phone</th><th>Status</th><th>Age</th><th>Class</th>
                 <th>Payment</th><th>Seniority</th><th>Grade</th><th></th>
               </tr>
             </thead>

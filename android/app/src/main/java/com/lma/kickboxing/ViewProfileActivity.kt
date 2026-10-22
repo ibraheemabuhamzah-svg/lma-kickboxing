@@ -50,6 +50,7 @@ class ViewProfileActivity : AppCompatActivity() {
         bg.setColor(ContextCompat.getColor(this, Constants.gradeColorRes(m.grade)))
 
         binding.tvPills.text = listOf(
+            Constants.roleLabel(m.role),
             Constants.classLabel(m.classKey),
             Constants.paymentLabel(m.paymentType),
             if (m.gender == "female") "Female" else "Male",

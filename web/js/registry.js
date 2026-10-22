@@ -164,6 +164,8 @@ function renderDashboard() {
 // ---------- STUDENTS ----------
 
 function renderStudentsFilters() {
+  document.getElementById('filterRole').innerHTML = '<option value="">All statuses</option>' +
+    ROLES.map(r => `<option value="${r.key}">${r.label}</option>`).join('');
   document.getElementById('filterClass').innerHTML = '<option value="">All classes</option>' +
     CLASSES.map(c => `<option value="${c.key}">${c.label}</option>`).join('');
   document.getElementById('filterPayment').innerHTML = '<option value="">All payment types</option>' +
@@ -178,6 +180,7 @@ function seniorityText(m) {
 
 function renderStudentsTable() {
   const search = document.getElementById('studentSearch').value.trim().toLowerCase();
+  const fRole = document.getElementById('filterRole').value;
   const fClass = document.getElementById('filterClass').value;
   const fPayment = document.getElementById('filterPayment').value;
   const fGrade = document.getElementById('filterGrade').value;
@@ -189,6 +192,7 @@ function renderStudentsTable() {
       `${m.phonePrefix}${m.phoneNumber}`.includes(search)
     );
   }
+  if (fRole) members = members.filter(m => (m.role || 'student') === fRole);
   if (fClass) members = members.filter(m => m.class === fClass);
   if (fPayment) members = members.filter(m => m.paymentType === fPayment);
   if (fGrade) members = members.filter(m => m.grade === fGrade);
@@ -198,6 +202,7 @@ function renderStudentsTable() {
     <tr data-id="${m.id}">
       <td>${m.firstName} ${m.lastName}</td>
       <td>${m.phonePrefix} ${m.phoneNumber}</td>
+      <td>${roleLabel(m.role)}</td>
       <td>${ageFromDob(m.dob) ?? '-'}</td>
       <td>${classLabel(m.class)}</td>
       <td>${paymentLabel(m.paymentType)}</td>
@@ -209,7 +214,7 @@ function renderStudentsTable() {
       </td>
       <td><button class="ghost viewBtn" data-id="${m.id}">View</button></td>
     </tr>
-  `).join('') || `<tr><td colspan="8" class="hint">No students found.</td></tr>`;
+  `).join('') || `<tr><td colspan="9" class="hint">No students found.</td></tr>`;
 
   tbody.querySelectorAll('.gradeSelect').forEach(sel => {
     sel.addEventListener('change', () => {
@@ -242,6 +247,7 @@ function renderStudentDetail(id) {
       <span class="badge ${m.grade || 'white'}">${gradeLabel(m.grade)}</span>
     </div>
     <div class="grid" style="margin-top:14px">
+      <div><strong>Status:</strong> ${roleLabel(m.role)}</div>
       <div><strong>WhatsApp:</strong> ${m.whatsapp || '-'}</div>
       <div><strong>Emergency contact:</strong> ${m.emergencyName || '-'} (${m.emergencyPhone || '-'})</div>
       <div><strong>Class:</strong> ${classLabel(m.class)}</div>
@@ -381,7 +387,7 @@ function initRegistry() {
 
   document.getElementById('revDate').value = new Date().toISOString().slice(0, 10);
 
-  ['studentSearch', 'filterClass', 'filterPayment', 'filterGrade'].forEach(id => {
+  ['studentSearch', 'filterRole', 'filterClass', 'filterPayment', 'filterGrade'].forEach(id => {
     document.getElementById(id).addEventListener('input', renderStudentsTable);
     document.getElementById(id).addEventListener('change', renderStudentsTable);
   });

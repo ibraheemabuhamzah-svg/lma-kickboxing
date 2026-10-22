@@ -157,6 +157,7 @@ class RegistryActivity : AppCompatActivity() {
 
     private fun setupStudentsPanel() {
         val p = binding.panelStudents
+        p.spinnerFilterRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("All statuses") + Constants.ROLES.map { it.label })
         p.spinnerFilterClass.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("All classes") + Constants.CLASSES.map { it.label })
         p.spinnerFilterPayment.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("All payment types") + Constants.PAYMENT_TYPES.map { it.label })
         p.spinnerFilterGrade.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("All grades") + Constants.GRADES.map { it.label })
@@ -165,6 +166,7 @@ class RegistryActivity : AppCompatActivity() {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) { renderStudents() }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+        p.spinnerFilterRole.onItemSelectedListener = listener
         p.spinnerFilterClass.onItemSelectedListener = listener
         p.spinnerFilterPayment.onItemSelectedListener = listener
         p.spinnerFilterGrade.onItemSelectedListener = listener
@@ -187,6 +189,8 @@ class RegistryActivity : AppCompatActivity() {
                     "${it.phonePrefix}${it.phoneNumber}".contains(search)
             }.toMutableList()
         }
+        val roleIdx = p.spinnerFilterRole.selectedItemPosition
+        if (roleIdx > 0) members = members.filter { it.role == Constants.ROLES[roleIdx - 1].key }.toMutableList()
         val classIdx = p.spinnerFilterClass.selectedItemPosition
         if (classIdx > 0) members = members.filter { it.classKey == Constants.CLASSES[classIdx - 1].key }.toMutableList()
         val payIdx = p.spinnerFilterPayment.selectedItemPosition
@@ -200,7 +204,8 @@ class RegistryActivity : AppCompatActivity() {
         val inflater = LayoutInflater.from(this)
         members.forEach { member ->
             val row = RowStudentBinding.inflate(inflater, p.studentsList, false)
-            row.tvName.text = "${member.firstName} ${member.lastName}"
+            row.tvName.text = "${member.firstName} ${member.lastName}" +
+                if (member.role != "student") "  ·  ${Constants.roleLabel(member.role)}" else ""
             val age = ageFromDob(member.dob)
             row.tvMeta.text = "${member.phonePrefix} ${member.phoneNumber} · ${age ?: "-"}y · " +
                 "${Constants.classLabel(member.classKey)} · ${Constants.paymentLabel(member.paymentType)} · " +
@@ -229,6 +234,7 @@ class RegistryActivity : AppCompatActivity() {
     private fun showStudentDetail(m: Member) {
         val age = ageFromDob(m.dob)
         val msg = """
+            Status: ${Constants.roleLabel(m.role)}
             Phone: ${m.phonePrefix} ${m.phoneNumber}
             WhatsApp: ${m.whatsapp.ifEmpty { "-" }}
             Gender: ${if (m.gender == "female") "Female" else "Male"}

@@ -29,6 +29,12 @@ object Constants {
         Option("transfer", "Transfer"),
     )
 
+    val ROLES = listOf(
+        Option("student", "Student"),
+        Option("coach", "Coach"),
+        Option("assistant", "Assistant (Volunteer)"),
+    )
+
     data class ScheduleSlot(val key: String, val day: String, val time: String, val classKey: String, val label: String)
 
     val SCHEDULE = listOf(
@@ -63,6 +69,7 @@ object Constants {
     fun gradeLabel(key: String?) = GRADES.find { it.key == key }?.label ?: "White Belt"
     fun classLabel(key: String?) = CLASSES.find { it.key == key }?.label ?: (key ?: "-")
     fun paymentLabel(key: String?) = PAYMENT_TYPES.find { it.key == key }?.label ?: (key ?: "-")
+    fun roleLabel(key: String?) = ROLES.find { it.key == key }?.label ?: "Student"
     fun scheduleLabel(key: String?) = SCHEDULE.find { it.key == key }?.let { "${it.day} ${it.time} — ${it.label}" } ?: (key ?: "-")
 
     fun gradeColorRes(key: String?): Int = when (key) {

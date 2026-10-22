@@ -24,6 +24,12 @@ const PAYMENT_TYPES = [
   { key: 'transfer', label: 'Transfer' },
 ];
 
+const ROLES = [
+  { key: 'student', label: 'Student' },
+  { key: 'coach', label: 'Coach' },
+  { key: 'assistant', label: 'Assistant (Volunteer)' },
+];
+
 // Fixed weekly schedule. `key` must stay stable: it is the unit used for
 // revenue entries and week-over-week class comparisons.
 const SCHEDULE = [
@@ -89,6 +95,11 @@ function classLabel(key) {
 function paymentLabel(key) {
   const p = PAYMENT_TYPES.find(p => p.key === key);
   return p ? p.label : key;
+}
+
+function roleLabel(key) {
+  const r = ROLES.find(r => r.key === key);
+  return r ? r.label : 'Student';
 }
 
 function formatDob(iso) {

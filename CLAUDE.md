@@ -17,6 +17,7 @@ Each member can create/edit their own profile. Fields:
 
 | Field | Notes |
 |---|---|
+| Status | Student (default) / Coach / Assistant (Volunteer) — self-selected at profile creation |
 | Phone number | With a country-prefix selector (dial code dropdown) |
 | First name, Last name | |
 | Date of birth | Format dd/mm/yyyy |

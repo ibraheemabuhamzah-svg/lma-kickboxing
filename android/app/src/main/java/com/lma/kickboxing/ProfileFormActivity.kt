@@ -63,6 +63,11 @@ class ProfileFormActivity : AppCompatActivity() {
 
     private fun fillForm(m: Member) {
         binding.tvFormTitle.text = "Edit your profile"
+        when (m.role) {
+            "coach" -> binding.radioCoach.isChecked = true
+            "assistant" -> binding.radioAssistant.isChecked = true
+            else -> binding.radioStudent.isChecked = true
+        }
         binding.editFirstName.setText(m.firstName)
         binding.editLastName.setText(m.lastName)
         dobIso = m.dob
@@ -147,6 +152,11 @@ class ProfileFormActivity : AppCompatActivity() {
             R.id.radioTeensAdults -> "teens_adults"
             else -> ""
         }
+        val role = when (binding.radioRole.checkedRadioButtonId) {
+            R.id.radioCoach -> "coach"
+            R.id.radioAssistant -> "assistant"
+            else -> "student"
+        }
 
         if (firstName.isEmpty() || lastName.isEmpty() || number.isEmpty() || dobIso.isEmpty() || gender.isEmpty() || classKey.isEmpty()) {
             Toast.makeText(this, "Please fill in all required fields.", Toast.LENGTH_SHORT).show()
@@ -160,6 +170,7 @@ class ProfileFormActivity : AppCompatActivity() {
         }
 
         val member = existingMember ?: Member()
+        member.role = role
         member.firstName = firstName
         member.lastName = lastName
         member.dob = dobIso

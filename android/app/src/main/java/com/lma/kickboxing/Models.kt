@@ -5,6 +5,7 @@ import java.util.UUID
 
 data class Member(
     var id: String = UUID.randomUUID().toString(),
+    var role: String = "student",
     var firstName: String = "",
     var lastName: String = "",
     var dob: String = "", // yyyy-MM-dd
@@ -24,7 +25,7 @@ data class Member(
     var updatedAt: Long = System.currentTimeMillis(),
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
-        put("id", id); put("firstName", firstName); put("lastName", lastName); put("dob", dob)
+        put("id", id); put("role", role); put("firstName", firstName); put("lastName", lastName); put("dob", dob)
         put("gender", gender); put("phonePrefix", phonePrefix); put("phoneNumber", phoneNumber)
         put("whatsapp", whatsapp); put("emergencyName", emergencyName); put("emergencyPhone", emergencyPhone)
         put("classKey", classKey); put("paymentType", paymentType); put("trainingYears", trainingYears)
@@ -35,6 +36,7 @@ data class Member(
     companion object {
         fun fromJson(o: JSONObject): Member = Member(
             id = o.optString("id"),
+            role = o.optString("role", "student"),
             firstName = o.optString("firstName"),
             lastName = o.optString("lastName"),
             dob = o.optString("dob"),
