@@ -42,8 +42,8 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest-apk
-          name: Latest Android build
+          tag_name: lma-kickboxing-apk
+          name: LMA KickBoxing — Android build
           body: Automatically built from the latest commit on main.
           files: android/app/build/outputs/apk/debug/app-debug.apk
           prerelease: true
