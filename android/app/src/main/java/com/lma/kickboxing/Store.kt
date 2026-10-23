@@ -24,8 +24,15 @@ object Store {
         prefs(ctx).edit().putString(KEY_MEMBERS, arr.toString()).apply()
     }
 
-    fun getMemberByPhone(ctx: Context, prefix: String, number: String): Member? =
-        getMembers(ctx).find { it.phonePrefix == prefix && it.phoneNumber == number }
+    // Strips spacing/dashes and a leading zero so "0501234567",
+    // "050-123-4567" and "501234567" are recognized as the same number.
+    fun normalizePhone(number: String): String =
+        number.replace(Regex("[\\s-]"), "").trimStart('0')
+
+    fun getMemberByPhone(ctx: Context, prefix: String, number: String): Member? {
+        val target = normalizePhone(number)
+        return getMembers(ctx).find { it.phonePrefix == prefix && normalizePhone(it.phoneNumber) == target }
+    }
 
     fun getMemberById(ctx: Context, id: String): Member? =
         getMembers(ctx).find { it.id == id }
@@ -36,6 +43,10 @@ object Store {
         member.updatedAt = System.currentTimeMillis()
         if (idx >= 0) members[idx] = member else members.add(member)
         saveMembers(ctx, members)
+    }
+
+    fun deleteMember(ctx: Context, id: String) {
+        saveMembers(ctx, getMembers(ctx).filter { it.id != id })
     }
 
     fun getRevenueEntries(ctx: Context): MutableList<RevenueEntry> {
@@ -62,12 +73,15 @@ object Store {
         saveRevenueEntries(ctx, getRevenueEntries(ctx).filter { it.id != id })
     }
 
-    const val GATE_KEY = "registry_unlocked"
+    // In-memory only (not SharedPreferences) so it resets whenever the app
+    // process dies, mirroring the web app's sessionStorage-scoped gate
+    // instead of staying unlocked forever on the device. A coach can also
+    // lock it explicitly via the Registry's "Lock" button.
+    private var registryUnlocked = false
 
-    fun isRegistryUnlocked(ctx: Context): Boolean =
-        prefs(ctx).getBoolean(GATE_KEY, false)
+    fun isRegistryUnlocked(ctx: Context): Boolean = registryUnlocked
 
     fun setRegistryUnlocked(ctx: Context, unlocked: Boolean) {
-        prefs(ctx).edit().putBoolean(GATE_KEY, unlocked).apply()
+        registryUnlocked = unlocked
     }
 }

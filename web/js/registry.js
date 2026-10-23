@@ -1,4 +1,17 @@
 // Registry (admin back-office) logic
+//
+// Wrapped in an IIFE so unlock()/tryUnlock() and the rest of this file's
+// functions aren't attached to `window` — calling e.g. `unlock()` from the
+// browser console on the live site no longer bypasses the password gate.
+(function () {
+
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
 
 const GATE_KEY = 'lma_registry_unlocked';
 
@@ -44,6 +57,15 @@ function bandFor(bands, value) {
 
 function monthKey(dateStr) {
   return dateStr ? dateStr.slice(0, 7) : ''; // YYYY-MM
+}
+
+// Local-timezone "today" as yyyy-MM-dd. Deliberately NOT `new
+// Date().toISOString()`, which is always UTC and would misattribute
+// entries/months made in the first few hours of the local day for any
+// club east of UTC.
+function todayIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 // ISO week key: YYYY-Www
@@ -107,7 +129,7 @@ function renderDashboard() {
   const members = getMembers();
   const revenue = getRevenueEntries();
 
-  const thisMonth = monthKey(new Date().toISOString());
+  const thisMonth = monthKey(todayIso());
   const monthRevenue = revenue.filter(r => monthKey(r.date) === thisMonth).reduce((s, r) => s + Number(r.amount || 0), 0);
   const totalRevenue = revenue.reduce((s, r) => s + Number(r.amount || 0), 0);
 
@@ -200,8 +222,8 @@ function renderStudentsTable() {
   const tbody = document.querySelector('#studentsTable tbody');
   tbody.innerHTML = members.map(m => `
     <tr data-id="${m.id}">
-      <td>${m.firstName} ${m.lastName}</td>
-      <td>${m.phonePrefix} ${m.phoneNumber}</td>
+      <td>${escapeHtml(m.firstName)} ${escapeHtml(m.lastName)}</td>
+      <td>${m.phonePrefix} ${escapeHtml(m.phoneNumber)}</td>
       <td>${roleLabel(m.role)}</td>
       <td>${ageFromDob(m.dob) ?? '-'}</td>
       <td>${classLabel(m.class)}</td>
@@ -212,7 +234,10 @@ function renderStudentsTable() {
           ${GRADES.map(g => `<option value="${g.key}" ${g.key === m.grade ? 'selected' : ''}>${g.label}</option>`).join('')}
         </select>
       </td>
-      <td><button class="ghost viewBtn" data-id="${m.id}">View</button></td>
+      <td>
+        <button class="ghost viewBtn" data-id="${m.id}">View</button>
+        <button class="ghost deleteStudentBtn" data-id="${m.id}" style="color:var(--red)">Delete</button>
+      </td>
     </tr>
   `).join('') || `<tr><td colspan="9" class="hint">No students found.</td></tr>`;
 
@@ -223,11 +248,25 @@ function renderStudentsTable() {
       member.grade = sel.value;
       upsertMember(member);
       renderDashboard();
+      renderStudentsTable();
     });
   });
 
   tbody.querySelectorAll('.viewBtn').forEach(btn => {
     btn.addEventListener('click', () => renderStudentDetail(btn.dataset.id));
+  });
+
+  tbody.querySelectorAll('.deleteStudentBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const member = getMemberById(btn.dataset.id);
+      if (!member) return;
+      const name = `${member.firstName} ${member.lastName}`;
+      if (!confirm(`Delete the profile for ${name}? This cannot be undone.`)) return;
+      deleteMember(member.id);
+      document.getElementById('studentDetail').style.display = 'none';
+      renderStudentsTable();
+      renderDashboard();
+    });
   });
 }
 
@@ -240,16 +279,16 @@ function renderStudentDetail(id) {
     <div class="profile-header">
       <img src="${m.selfie || PLACEHOLDER_AVATAR}" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid var(--line)" />
       <div>
-        <div class="name">${m.firstName} ${m.lastName}</div>
-        <div class="meta">${m.phonePrefix} ${m.phoneNumber} · ${m.gender === 'female' ? 'Female' : 'Male'} · Born ${m.dob ? m.dob.split('-').reverse().join('/') : '-'}</div>
+        <div class="name">${escapeHtml(m.firstName)} ${escapeHtml(m.lastName)}</div>
+        <div class="meta">${m.phonePrefix} ${escapeHtml(m.phoneNumber)} · ${m.gender === 'female' ? 'Female' : 'Male'} · Born ${m.dob ? m.dob.split('-').reverse().join('/') : '-'}</div>
       </div>
       <div class="spacer"></div>
       <span class="badge ${m.grade || 'white'}">${gradeLabel(m.grade)}</span>
     </div>
     <div class="grid" style="margin-top:14px">
       <div><strong>Status:</strong> ${roleLabel(m.role)}</div>
-      <div><strong>WhatsApp:</strong> ${m.whatsapp || '-'}</div>
-      <div><strong>Emergency contact:</strong> ${m.emergencyName || '-'} (${m.emergencyPhone || '-'})</div>
+      <div><strong>WhatsApp:</strong> ${escapeHtml(m.whatsapp) || '-'}</div>
+      <div><strong>Emergency contact:</strong> ${escapeHtml(m.emergencyName) || '-'} (${escapeHtml(m.emergencyPhone) || '-'})</div>
       <div><strong>Class:</strong> ${classLabel(m.class)}</div>
       <div><strong>Payment type:</strong> ${paymentLabel(m.paymentType)}</div>
       <div><strong>Training experience:</strong> ${seniorityText(m)}</div>
@@ -285,7 +324,7 @@ function renderRevenueTable() {
       <td>${scheduleLabel(e.classKey)}</td>
       <td>${e.studentCount ?? '-'}</td>
       <td>${Number(e.amount).toFixed(2)}</td>
-      <td>${e.note || ''}</td>
+      <td>${escapeHtml(e.note)}</td>
       <td><button class="ghost delRevBtn" data-id="${e.id}">Delete</button></td>
     </tr>
   `).join('') || `<tr><td colspan="6" class="hint">No entries yet.</td></tr>`;
@@ -364,9 +403,10 @@ function initGate() {
   });
 }
 
-function tryUnlock() {
+async function tryUnlock() {
   const pwd = document.getElementById('gatePassword').value;
-  if (pwd === REGISTRY_PASSWORD) {
+  const hash = await sha256Hex(pwd);
+  if (hash === REGISTRY_PASSWORD_HASH) {
     unlock();
   } else {
     document.getElementById('gateError').innerHTML = '<div class="alert error">Incorrect password.</div>';
@@ -385,12 +425,14 @@ function initRegistry() {
   renderScheduleTable();
   renderTrends();
 
-  document.getElementById('revDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('revDate').value = todayIso();
 
-  ['studentSearch', 'filterRole', 'filterClass', 'filterPayment', 'filterGrade'].forEach(id => {
-    document.getElementById(id).addEventListener('input', renderStudentsTable);
+  ['filterRole', 'filterClass', 'filterPayment', 'filterGrade'].forEach(id => {
     document.getElementById(id).addEventListener('change', renderStudentsTable);
   });
+  // Debounced so typing a name doesn't re-parse localStorage and rebuild the
+  // whole table on every single keystroke.
+  document.getElementById('studentSearch').addEventListener('input', debounce(renderStudentsTable, 200));
 
   document.getElementById('trendClass').addEventListener('change', renderTrends);
 
@@ -404,7 +446,7 @@ function initRegistry() {
       note: document.getElementById('revNote').value.trim(),
     });
     document.getElementById('revenueForm').reset();
-    document.getElementById('revDate').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('revDate').value = todayIso();
     renderRevenueTable();
     renderDashboard();
     renderTrends();
@@ -412,3 +454,5 @@ function initRegistry() {
 }
 
 document.addEventListener('DOMContentLoaded', initGate);
+
+})();

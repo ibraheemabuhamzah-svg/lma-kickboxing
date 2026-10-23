@@ -21,8 +21,15 @@ function saveMembers(members) {
   localStorage.setItem(DB.MEMBERS, JSON.stringify(members));
 }
 
+// Strips spacing/dashes and a leading zero so "0501234567", "050-123-4567"
+// and "501234567" are recognized as the same number.
+function normalizePhone(number) {
+  return (number || '').replace(/[\s-]/g, '').replace(/^0+/, '');
+}
+
 function getMemberByPhone(prefix, number) {
-  return getMembers().find(m => m.phonePrefix === prefix && m.phoneNumber === number);
+  const target = normalizePhone(number);
+  return getMembers().find(m => m.phonePrefix === prefix && normalizePhone(m.phoneNumber) === target);
 }
 
 function getMemberById(id) {
@@ -32,18 +39,21 @@ function getMemberById(id) {
 function upsertMember(member) {
   const members = getMembers();
   const idx = members.findIndex(m => m.id === member.id);
+  let saved;
   if (idx >= 0) {
     member.updatedAt = new Date().toISOString();
-    members[idx] = { ...members[idx], ...member };
+    saved = { ...members[idx], ...member };
+    members[idx] = saved;
   } else {
     member.id = member.id || uid();
     member.createdAt = new Date().toISOString();
     member.updatedAt = member.createdAt;
     if (!member.grade) member.grade = 'white';
     members.push(member);
+    saved = member;
   }
   saveMembers(members);
-  return member;
+  return saved;
 }
 
 function deleteMember(id) {

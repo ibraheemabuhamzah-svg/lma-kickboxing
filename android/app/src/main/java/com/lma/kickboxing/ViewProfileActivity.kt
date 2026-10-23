@@ -1,5 +1,6 @@
 package com.lma.kickboxing
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.drawable.GradientDrawable
@@ -23,6 +24,19 @@ class ViewProfileActivity : AppCompatActivity() {
         binding.btnEdit.setOnClickListener {
             startActivity(Intent(this, ProfileFormActivity::class.java).putExtra("memberId", memberId))
             finish()
+        }
+        binding.btnDeleteProfile.setOnClickListener {
+            val m = Store.getMemberById(this, memberId) ?: return@setOnClickListener
+            AlertDialog.Builder(this)
+                .setTitle("Delete profile")
+                .setMessage("Delete the profile for ${m.firstName} ${m.lastName}? This cannot be undone.")
+                .setPositiveButton("Delete") { _, _ ->
+                    Store.deleteMember(this, memberId)
+                    startActivity(Intent(this, LookupActivity::class.java))
+                    finish()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
         }
         binding.btnBack.setOnClickListener {
             startActivity(Intent(this, LookupActivity::class.java))
@@ -51,7 +65,7 @@ class ViewProfileActivity : AppCompatActivity() {
 
         binding.tvPills.text = listOf(
             Constants.roleLabel(m.role),
-            Constants.classLabel(m.classKey),
+            Constants.classLabel(m.classCategory),
             Constants.paymentLabel(m.paymentType),
             if (m.gender == "female") "Female" else "Male",
             "${m.trainingYears}y ${m.trainingMonths}m training",

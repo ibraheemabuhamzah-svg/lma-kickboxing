@@ -15,7 +15,13 @@ data class Member(
     var whatsapp: String = "",
     var emergencyName: String = "",
     var emergencyPhone: String = "",
-    var classKey: String = "",
+    // Named differently from RevenueEntry.classKey below on purpose: this
+    // holds a class-CATEGORY key (matches Constants.CLASSES), while
+    // RevenueEntry.classKey holds a SCHEDULE-SLOT id (matches
+    // Constants.SCHEDULE) — disjoint key-spaces that used to share the
+    // identical field name "classKey" on both data classes, with nothing
+    // stopping a future accidental comparison/assignment between the two.
+    var classCategory: String = "",
     var paymentType: String = "payg",
     var trainingYears: Int = 0,
     var trainingMonths: Int = 0,
@@ -28,7 +34,10 @@ data class Member(
         put("id", id); put("role", role); put("firstName", firstName); put("lastName", lastName); put("dob", dob)
         put("gender", gender); put("phonePrefix", phonePrefix); put("phoneNumber", phoneNumber)
         put("whatsapp", whatsapp); put("emergencyName", emergencyName); put("emergencyPhone", emergencyPhone)
-        put("classKey", classKey); put("paymentType", paymentType); put("trainingYears", trainingYears)
+        // Serialized key stays "classKey" for backward compatibility with
+        // already-stored data on installed devices; only the Kotlin property
+        // name changed.
+        put("classKey", classCategory); put("paymentType", paymentType); put("trainingYears", trainingYears)
         put("trainingMonths", trainingMonths); put("selfieBase64", selfieBase64 ?: JSONObject.NULL)
         put("grade", grade); put("createdAt", createdAt); put("updatedAt", updatedAt)
     }
@@ -46,7 +55,7 @@ data class Member(
             whatsapp = o.optString("whatsapp"),
             emergencyName = o.optString("emergencyName"),
             emergencyPhone = o.optString("emergencyPhone"),
-            classKey = o.optString("classKey"),
+            classCategory = o.optString("classKey"),
             paymentType = o.optString("paymentType"),
             trainingYears = o.optInt("trainingYears"),
             trainingMonths = o.optInt("trainingMonths"),

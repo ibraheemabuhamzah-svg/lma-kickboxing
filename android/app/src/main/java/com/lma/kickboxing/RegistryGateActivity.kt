@@ -23,7 +23,8 @@ class RegistryGateActivity : AppCompatActivity() {
     }
 
     private fun tryUnlock() {
-        if (binding.editPassword.text.toString() == Constants.REGISTRY_PASSWORD) {
+        val entered = binding.editPassword.text.toString()
+        if (Constants.sha256Hex(entered) == Constants.REGISTRY_PASSWORD_HASH) {
             Store.setRegistryUnlocked(this, true)
             openRegistry()
         } else {

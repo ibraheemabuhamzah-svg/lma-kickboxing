@@ -2,7 +2,10 @@ package com.lma.kickboxing
 
 import android.app.AlertDialog
 import android.app.DatePickerDialog
+import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.AdapterView
@@ -24,12 +27,20 @@ import kotlin.math.max
 class RegistryActivity : AppCompatActivity() {
     private lateinit var binding: ActivityRegistryBinding
     private var revDateIso: String = ""
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegistryBinding.inflate(layoutInflater)
         setContentView(binding.root)
         title = "Registry"
+
+        binding.btnLockRegistry.setOnClickListener {
+            Store.setRegistryUnlocked(this, false)
+            startActivity(Intent(this, RegistryGateActivity::class.java))
+            finish()
+        }
 
         setupTabs()
         setupStudentsPanel()
@@ -121,8 +132,10 @@ class RegistryActivity : AppCompatActivity() {
         val totalRevenue = revenue.sumOf { it.amount }
 
         d.tvTotalStudents.text = members.size.toString()
-        d.tvMonthRevenue.text = monthRevenue.toInt().toString()
-        d.tvTotalRevenue.text = totalRevenue.toInt().toString()
+        // Math.round, not toInt() (which truncates toward zero), so this
+        // matches the web app's toFixed(0) rounding for the same totals.
+        d.tvMonthRevenue.text = Math.round(monthRevenue).toString()
+        d.tvTotalRevenue.text = Math.round(totalRevenue).toString()
         d.tvSessionsLogged.text = revenue.size.toString()
 
         val monthMap = linkedMapOf<String, Float>()
@@ -171,9 +184,16 @@ class RegistryActivity : AppCompatActivity() {
         p.spinnerFilterPayment.onItemSelectedListener = listener
         p.spinnerFilterGrade.onItemSelectedListener = listener
 
+        // Debounced so typing a name doesn't re-read SharedPreferences and
+        // re-inflate the whole student list on every single keystroke.
         p.editSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { renderStudents() }
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                searchRunnable?.let { searchHandler.removeCallbacks(it) }
+                val runnable = Runnable { renderStudents() }
+                searchRunnable = runnable
+                searchHandler.postDelayed(runnable, 200)
+            }
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
     }
@@ -192,7 +212,7 @@ class RegistryActivity : AppCompatActivity() {
         val roleIdx = p.spinnerFilterRole.selectedItemPosition
         if (roleIdx > 0) members = members.filter { it.role == Constants.ROLES[roleIdx - 1].key }.toMutableList()
         val classIdx = p.spinnerFilterClass.selectedItemPosition
-        if (classIdx > 0) members = members.filter { it.classKey == Constants.CLASSES[classIdx - 1].key }.toMutableList()
+        if (classIdx > 0) members = members.filter { it.classCategory == Constants.CLASSES[classIdx - 1].key }.toMutableList()
         val payIdx = p.spinnerFilterPayment.selectedItemPosition
         if (payIdx > 0) members = members.filter { it.paymentType == Constants.PAYMENT_TYPES[payIdx - 1].key }.toMutableList()
         val gradeIdx = p.spinnerFilterGrade.selectedItemPosition
@@ -208,7 +228,7 @@ class RegistryActivity : AppCompatActivity() {
                 if (member.role != "student") "  ·  ${Constants.roleLabel(member.role)}" else ""
             val age = ageFromDob(member.dob)
             row.tvMeta.text = "${member.phonePrefix} ${member.phoneNumber} · ${age ?: "-"}y · " +
-                "${Constants.classLabel(member.classKey)} · ${Constants.paymentLabel(member.paymentType)} · " +
+                "${Constants.classLabel(member.classCategory)} · ${Constants.paymentLabel(member.paymentType)} · " +
                 "${member.trainingYears}y ${member.trainingMonths}m"
 
             row.spinnerGrade.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, Constants.GRADES.map { it.label })
@@ -221,12 +241,25 @@ class RegistryActivity : AppCompatActivity() {
                         member.grade = newGrade
                         Store.upsertMember(this@RegistryActivity, member)
                         renderDashboard()
+                        renderStudents()
                     }
                 }
                 override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
 
             row.btnView.setOnClickListener { showStudentDetail(member) }
+            row.btnDelete.setOnClickListener {
+                AlertDialog.Builder(this)
+                    .setTitle("Delete profile")
+                    .setMessage("Delete the profile for ${member.firstName} ${member.lastName}? This cannot be undone.")
+                    .setPositiveButton("Delete") { _, _ ->
+                        Store.deleteMember(this, member.id)
+                        renderStudents()
+                        renderDashboard()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
             p.studentsList.addView(row.root)
         }
     }
@@ -240,7 +273,7 @@ class RegistryActivity : AppCompatActivity() {
             Gender: ${if (m.gender == "female") "Female" else "Male"}
             Date of birth: ${if (m.dob.isNotEmpty()) displayDate(m.dob) else "-"} ${if (age != null) "($age y)" else ""}
             Emergency contact: ${m.emergencyName.ifEmpty { "-" }} (${m.emergencyPhone.ifEmpty { "-" }})
-            Class: ${Constants.classLabel(m.classKey)}
+            Class: ${Constants.classLabel(m.classCategory)}
             Payment type: ${Constants.paymentLabel(m.paymentType)}
             Training experience: ${m.trainingYears}y ${m.trainingMonths}m
             Grade: ${Constants.gradeLabel(m.grade)}

@@ -3,7 +3,15 @@ package com.lma.kickboxing
 data class Option(val key: String, val label: String)
 
 object Constants {
-    const val REGISTRY_PASSWORD = "LmaKickBoxingR"
+    // SHA-256 of the registry password, so it isn't sitting in plaintext in
+    // the compiled APK (still recoverable by a determined attacker who hashes
+    // guesses offline, but closes the trivial "grep the decompiled strings" path).
+    const val REGISTRY_PASSWORD_HASH = "cd67a26f1ae4b7e78a1f1a2c92c770fc11818052c3438ceb2ef761c0b919b9d2"
+
+    fun sha256Hex(text: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(text.toByteArray(Charsets.UTF_8))
+        return digest.joinToString("") { "%02x".format(it) }
+    }
 
     val GRADES = listOf(
         Option("white", "White Belt"),

@@ -32,11 +32,14 @@ Each member can create/edit their own profile. Fields:
 
 Member-facing profile form must NOT expose the grade/belt field for editing — it is read-only there (or hidden), and can only be set/changed via the password-protected Registry.
 
+A member can also delete their own profile from the Member Area (with a confirmation prompt) — this permanently removes their record from local storage.
+
 ## 2. Registry (Admin Back-Office)
 
-- Protected by a single password: `LmaKickBoxingR` (client-side gate — simple password prompt; stored data stays in localStorage, this is not meant to be cryptographically secure).
+- Protected by a single password: `LmaKickBoxingR` (client-side gate — simple password prompt, checked against a SHA-256 hash rather than a plaintext comparison; stored data stays in localStorage, this is not meant to be cryptographically secure — there is no backend, so a determined attacker could still brute-force the hash offline).
 - From the Registry, the admin can:
-  - View/edit every member's full profile, including setting/changing the **grade/belt**.
+  - Set/change a member's **grade/belt** (the only profile field the Registry edits directly today).
+  - Delete a student's profile (with a confirmation prompt) from the Students tab.
   - Enter the day's revenue after each class (date, class/session, amount, optional note).
   - View dashboards/statistics (see below).
 

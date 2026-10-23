@@ -78,7 +78,7 @@ class ProfileFormActivity : AppCompatActivity() {
         binding.editWhatsapp.setText(m.whatsapp)
         binding.editEmergencyName.setText(m.emergencyName)
         binding.editEmergencyPhone.setText(m.emergencyPhone)
-        when (m.classKey) {
+        when (m.classCategory) {
             "girls" -> binding.radioGirls.isChecked = true
             "kids" -> binding.radioKids.isChecked = true
             "teens_adults" -> binding.radioTeensAdults.isChecked = true
@@ -146,7 +146,7 @@ class ProfileFormActivity : AppCompatActivity() {
             R.id.radioFemale -> "female"
             else -> ""
         }
-        val classKey = when (binding.radioClass.checkedRadioButtonId) {
+        val classCategory = when (binding.radioClass.checkedRadioButtonId) {
             R.id.radioGirls -> "girls"
             R.id.radioKids -> "kids"
             R.id.radioTeensAdults -> "teens_adults"
@@ -158,7 +158,7 @@ class ProfileFormActivity : AppCompatActivity() {
             else -> "student"
         }
 
-        if (firstName.isEmpty() || lastName.isEmpty() || number.isEmpty() || dobIso.isEmpty() || gender.isEmpty() || classKey.isEmpty()) {
+        if (firstName.isEmpty() || lastName.isEmpty() || number.isEmpty() || dobIso.isEmpty() || gender.isEmpty() || classCategory.isEmpty()) {
             Toast.makeText(this, "Please fill in all required fields.", Toast.LENGTH_SHORT).show()
             return
         }
@@ -180,12 +180,21 @@ class ProfileFormActivity : AppCompatActivity() {
         member.whatsapp = binding.editWhatsapp.text.toString().trim()
         member.emergencyName = binding.editEmergencyName.text.toString().trim()
         member.emergencyPhone = binding.editEmergencyPhone.text.toString().trim()
-        member.classKey = classKey
+        member.classCategory = classCategory
         member.paymentType = Constants.PAYMENT_TYPES[binding.spinnerPayment.selectedItemPosition].key
         member.trainingYears = binding.editYears.text.toString().toIntOrNull() ?: 0
         member.trainingMonths = binding.editMonths.text.toString().toIntOrNull() ?: 0
         member.selfieBase64 = selfieBase64
-        if (existingMember == null) member.grade = "white"
+        if (existingMember == null) {
+            member.grade = "white"
+        } else {
+            // Re-read the grade fresh from storage right before saving, rather
+            // than trusting the in-memory snapshot captured when this form was
+            // opened — otherwise a grade change a coach made in the Registry
+            // while this member had their edit screen open would silently be
+            // overwritten back to the stale value.
+            member.grade = Store.getMemberById(this, member.id)?.grade ?: member.grade
+        }
 
         Store.upsertMember(this, member)
         Toast.makeText(this, "Profile saved successfully.", Toast.LENGTH_SHORT).show()

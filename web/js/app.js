@@ -122,6 +122,16 @@ function init() {
     showScreen('form');
   });
 
+  document.getElementById('deleteProfileBtn').addEventListener('click', () => {
+    if (!currentMember) return;
+    const name = `${currentMember.firstName} ${currentMember.lastName}`;
+    if (!confirm(`Delete the profile for ${name}? This cannot be undone.`)) return;
+    deleteMember(currentMember.id);
+    currentMember = null;
+    showScreen('lookup');
+    showAlert('Profile deleted.', 'success');
+  });
+
   document.getElementById('backBtn').addEventListener('click', () => {
     currentMember = null;
     showScreen('lookup');
@@ -164,7 +174,11 @@ function init() {
       trainingYears: parseInt(document.getElementById('trainingYears').value, 10) || 0,
       trainingMonths: parseInt(document.getElementById('trainingMonths').value, 10) || 0,
       selfie: selfieData,
-      grade: currentMember ? currentMember.grade : 'white',
+      // grade is intentionally omitted: it's Registry-only, and upsertMember's
+      // merge preserves whatever grade is already stored (or defaults new
+      // members to 'white') rather than resending a possibly-stale value
+      // captured when this form was opened, which could otherwise clobber a
+      // grade change a coach made in the meantime.
     };
 
     // prevent duplicate phone numbers across different members

@@ -77,7 +77,17 @@ const DIAL_CODES = [
   { code: '+52', country: 'Mexico' }, { code: '+54', country: 'Argentina' },
 ];
 
-const REGISTRY_PASSWORD = 'LmaKickBoxingR';
+// SHA-256 of the registry password, so the real password isn't sitting in
+// plaintext in this publicly-served file. Still only as strong as a
+// client-side check can be (no backend), but closes the trivial
+// "view-source and read the password" path.
+const REGISTRY_PASSWORD_HASH = 'cd67a26f1ae4b7e78a1f1a2c92c770fc11818052c3438ceb2ef761c0b919b9d2';
+
+async function sha256Hex(text) {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 const PLACEHOLDER_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#f0f0f2"/><circle cx="50" cy="38" r="18" fill="#cfcfd4"/><ellipse cx="50" cy="88" rx="32" ry="24" fill="#cfcfd4"/></svg>'
@@ -101,6 +111,12 @@ function paymentLabel(key) {
 function roleLabel(key) {
   const r = ROLES.find(r => r.key === key);
   return r ? r.label : 'Student';
+}
+
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function escapeHtml(value) {
+  if (value == null) return '';
+  return String(value).replace(/[&<>"']/g, c => HTML_ESCAPES[c]);
 }
 
 function formatDob(iso) {

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg">
@@ -26,6 +27,9 @@
 
         <Button android:id="@+id/btnEdit" style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent" android:layout_height="52dp" android:text="Edit profile" android:textAllCaps="false" android:layout_marginBottom="12dp" />
+        <Button android:id="@+id/btnDeleteProfile" style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent" android:layout_height="52dp" android:text="Delete profile" android:textAllCaps="false"
+            android:textColor="@color/red" app:strokeColor="@color/red" android:layout_marginBottom="12dp" />
         <Button android:id="@+id/btnBack" style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="match_parent" android:layout_height="wrap_content" android:text="&#8592; Back" android:textAllCaps="false" />
 
