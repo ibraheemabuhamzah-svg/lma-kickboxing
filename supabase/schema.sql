@@ -43,15 +43,15 @@ alter table revenue_entries enable row level security;
 -- directly via the Supabase API. Acceptable for a small club roster, but
 -- worth knowing: don't put anything more sensitive than this app already
 -- asks members for.
-create policy "anon read members" on members for select using (true);
-create policy "anon write members" on members for insert with check (true);
-create policy "anon update members" on members for update using (true);
-create policy "anon delete members" on members for delete using (true);
+create policy "anon read members" on members for select to anon using (true);
+create policy "anon write members" on members for insert to anon with check (true);
+create policy "anon update members" on members for update to anon using (true) with check (true);
+create policy "anon delete members" on members for delete to anon using (true);
 
-create policy "anon read revenue" on revenue_entries for select using (true);
-create policy "anon write revenue" on revenue_entries for insert with check (true);
-create policy "anon update revenue" on revenue_entries for update using (true);
-create policy "anon delete revenue" on revenue_entries for delete using (true);
+create policy "anon read revenue" on revenue_entries for select to anon using (true);
+create policy "anon write revenue" on revenue_entries for insert to anon with check (true);
+create policy "anon update revenue" on revenue_entries for update to anon using (true) with check (true);
+create policy "anon delete revenue" on revenue_entries for delete to anon using (true);
 
 -- RLS policies alone aren't enough — Postgres still needs the base table
 -- privilege granted to the `anon` role, or writes fail with "new row
