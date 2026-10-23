@@ -12,7 +12,9 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.lma.kickboxing.databinding.ActivityProfileFormBinding
+import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.util.Calendar
 
@@ -36,24 +38,32 @@ class ProfileFormActivity : AppCompatActivity() {
         binding.spinnerPrefix.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, prefixLabels)
         binding.spinnerPayment.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, Constants.PAYMENT_TYPES.map { it.label })
 
-        val memberId = intent.getStringExtra("memberId")
-        if (memberId != null) {
-            existingMember = Store.getMemberById(this, memberId)
-        }
-
-        if (existingMember != null) {
-            fillForm(existingMember!!)
-        } else {
-            val prefix = intent.getStringExtra("prefix") ?: "+971"
-            val number = intent.getStringExtra("number") ?: ""
-            setPrefixSelection(prefix)
-            binding.editPhoneNumber.setText(number)
-            updateGradeBadge("white")
-        }
-
         binding.btnDob.setOnClickListener { showDatePicker() }
         binding.btnPickSelfie.setOnClickListener { pickImage.launch("image/*") }
         binding.btnSave.setOnClickListener { save() }
+
+        val memberId = intent.getStringExtra("memberId")
+        if (memberId != null) {
+            lifecycleScope.launch {
+                try {
+                    existingMember = Store.getMemberById(this@ProfileFormActivity, memberId)
+                    val m = existingMember
+                    if (m != null) fillForm(m) else setupForNewMember()
+                } catch (e: Exception) {
+                    Toast.makeText(this@ProfileFormActivity, e.message, Toast.LENGTH_LONG).show()
+                }
+            }
+        } else {
+            setupForNewMember()
+        }
+    }
+
+    private fun setupForNewMember() {
+        val prefix = intent.getStringExtra("prefix") ?: "+971"
+        val number = intent.getStringExtra("number") ?: ""
+        setPrefixSelection(prefix)
+        binding.editPhoneNumber.setText(number)
+        updateGradeBadge("white")
     }
 
     private fun setPrefixSelection(prefix: String) {
@@ -163,42 +173,51 @@ class ProfileFormActivity : AppCompatActivity() {
             return
         }
 
-        val duplicate = Store.getMemberByPhone(this, prefix, number)
-        if (duplicate != null && duplicate.id != existingMember?.id) {
-            Toast.makeText(this, "A profile already exists with this phone number.", Toast.LENGTH_SHORT).show()
-            return
-        }
+        binding.btnSave.isEnabled = false
+        lifecycleScope.launch {
+            try {
+                val duplicate = Store.getMemberByPhone(this@ProfileFormActivity, prefix, number)
+                if (duplicate != null && duplicate.id != existingMember?.id) {
+                    Toast.makeText(this@ProfileFormActivity, "A profile already exists with this phone number.", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
 
-        val member = existingMember ?: Member()
-        member.role = role
-        member.firstName = firstName
-        member.lastName = lastName
-        member.dob = dobIso
-        member.gender = gender
-        member.phonePrefix = prefix
-        member.phoneNumber = number
-        member.whatsapp = binding.editWhatsapp.text.toString().trim()
-        member.emergencyName = binding.editEmergencyName.text.toString().trim()
-        member.emergencyPhone = binding.editEmergencyPhone.text.toString().trim()
-        member.classCategory = classCategory
-        member.paymentType = Constants.PAYMENT_TYPES[binding.spinnerPayment.selectedItemPosition].key
-        member.trainingYears = binding.editYears.text.toString().toIntOrNull() ?: 0
-        member.trainingMonths = binding.editMonths.text.toString().toIntOrNull() ?: 0
-        member.selfieBase64 = selfieBase64
-        if (existingMember == null) {
-            member.grade = "white"
-        } else {
-            // Re-read the grade fresh from storage right before saving, rather
-            // than trusting the in-memory snapshot captured when this form was
-            // opened — otherwise a grade change a coach made in the Registry
-            // while this member had their edit screen open would silently be
-            // overwritten back to the stale value.
-            member.grade = Store.getMemberById(this, member.id)?.grade ?: member.grade
-        }
+                val member = existingMember ?: Member()
+                member.role = role
+                member.firstName = firstName
+                member.lastName = lastName
+                member.dob = dobIso
+                member.gender = gender
+                member.phonePrefix = prefix
+                member.phoneNumber = number
+                member.whatsapp = binding.editWhatsapp.text.toString().trim()
+                member.emergencyName = binding.editEmergencyName.text.toString().trim()
+                member.emergencyPhone = binding.editEmergencyPhone.text.toString().trim()
+                member.classCategory = classCategory
+                member.paymentType = Constants.PAYMENT_TYPES[binding.spinnerPayment.selectedItemPosition].key
+                member.trainingYears = binding.editYears.text.toString().toIntOrNull() ?: 0
+                member.trainingMonths = binding.editMonths.text.toString().toIntOrNull() ?: 0
+                member.selfieBase64 = selfieBase64
+                if (existingMember == null) {
+                    member.grade = "white"
+                } else {
+                    // Re-read the grade fresh from storage right before saving, rather
+                    // than trusting the in-memory snapshot captured when this form was
+                    // opened — otherwise a grade change a coach made in the Registry
+                    // while this member had their edit screen open would silently be
+                    // overwritten back to the stale value.
+                    member.grade = Store.getMemberById(this@ProfileFormActivity, member.id)?.grade ?: member.grade
+                }
 
-        Store.upsertMember(this, member)
-        Toast.makeText(this, "Profile saved successfully.", Toast.LENGTH_SHORT).show()
-        startActivity(Intent(this, ViewProfileActivity::class.java).putExtra("memberId", member.id))
-        finish()
+                Store.upsertMember(this@ProfileFormActivity, member)
+                Toast.makeText(this@ProfileFormActivity, "Profile saved successfully.", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(this@ProfileFormActivity, ViewProfileActivity::class.java).putExtra("memberId", member.id))
+                finish()
+            } catch (e: Exception) {
+                Toast.makeText(this@ProfileFormActivity, e.message, Toast.LENGTH_LONG).show()
+            } finally {
+                binding.btnSave.isEnabled = true
+            }
+        }
     }
 }

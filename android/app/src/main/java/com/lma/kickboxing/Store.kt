@@ -1,27 +1,109 @@
 package com.lma.kickboxing
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
 
+// Shared cloud database (Supabase) so the web app and the Android app see
+// the same data. The anon key is meant to be public (same trust model as
+// the Registry's own client-side password gate) but it does mean anyone
+// who extracts it can read/write the tables directly, bypassing the
+// Registry password — see supabase/schema.sql for the policies in place.
 object Store {
-    private const val PREFS = "lma_prefs"
-    private const val KEY_MEMBERS = "lma_members"
-    private const val KEY_REVENUE = "lma_revenue"
+    private const val SUPABASE_URL = "https://oaxeeljelnpobzxzfsrh.supabase.co"
+    private const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9heGVlbGplbG5wb2J6eHpmc3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3MDY2NzIsImV4cCI6MjEwODI4MjY3Mn0.SWq5rPQNuPmWWhDkHNKwNLCRgvZcYwP3cumNRVl_CLs"
 
-    private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-
-    fun getMembers(ctx: Context): MutableList<Member> {
-        val raw = prefs(ctx).getString(KEY_MEMBERS, "[]") ?: "[]"
-        val arr = JSONArray(raw)
-        val list = mutableListOf<Member>()
-        for (i in 0 until arr.length()) list.add(Member.fromJson(arr.getJSONObject(i)))
-        return list
+    private suspend fun request(
+        path: String,
+        method: String = "GET",
+        body: String? = null,
+        extraHeaders: Map<String, String> = emptyMap(),
+    ): String = withContext(Dispatchers.IO) {
+        val conn = URL("$SUPABASE_URL/rest/v1/$path").openConnection() as HttpURLConnection
+        try {
+            conn.requestMethod = method
+            conn.connectTimeout = 15000
+            conn.readTimeout = 15000
+            conn.setRequestProperty("apikey", SUPABASE_ANON_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $SUPABASE_ANON_KEY")
+            conn.setRequestProperty("Content-Type", "application/json")
+            extraHeaders.forEach { (k, v) -> conn.setRequestProperty(k, v) }
+            if (body != null) {
+                conn.doOutput = true
+                conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+            }
+            val code = conn.responseCode
+            val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+            val text = stream?.bufferedReader()?.use { it.readText() } ?: ""
+            if (code !in 200..299) {
+                throw Exception("Database error ($code): $text")
+            }
+            text
+        } catch (e: Exception) {
+            if (e.message?.startsWith("Database error") == true) throw e
+            throw Exception("Network error — check your internet connection.")
+        } finally {
+            conn.disconnect()
+        }
     }
 
-    private fun saveMembers(ctx: Context, members: List<Member>) {
-        val arr = JSONArray()
-        members.forEach { arr.put(it.toJson()) }
-        prefs(ctx).edit().putString(KEY_MEMBERS, arr.toString()).apply()
+    private fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
+
+    // ---------- MEMBERS ----------
+
+    private fun memberToJson(m: Member): JSONObject = JSONObject().apply {
+        put("id", m.id)
+        put("role", m.role)
+        put("first_name", m.firstName)
+        put("last_name", m.lastName)
+        put("dob", m.dob)
+        put("gender", m.gender)
+        put("phone_prefix", m.phonePrefix)
+        put("phone_number", m.phoneNumber)
+        put("whatsapp", m.whatsapp)
+        put("emergency_name", m.emergencyName)
+        put("emergency_phone", m.emergencyPhone)
+        put("class_category", m.classCategory)
+        put("payment_type", m.paymentType)
+        put("training_years", m.trainingYears)
+        put("training_months", m.trainingMonths)
+        put("selfie_base64", m.selfieBase64 ?: JSONObject.NULL)
+        put("grade", m.grade)
+        put("created_at", m.createdAt)
+        put("updated_at", m.updatedAt)
+    }
+
+    private fun jsonToMember(o: JSONObject): Member = Member(
+        id = o.optString("id"),
+        role = o.optString("role", "student"),
+        firstName = o.optString("first_name"),
+        lastName = o.optString("last_name"),
+        dob = o.optString("dob"),
+        gender = o.optString("gender"),
+        phonePrefix = o.optString("phone_prefix"),
+        phoneNumber = o.optString("phone_number"),
+        whatsapp = o.optString("whatsapp"),
+        emergencyName = o.optString("emergency_name"),
+        emergencyPhone = o.optString("emergency_phone"),
+        classCategory = o.optString("class_category"),
+        paymentType = o.optString("payment_type"),
+        trainingYears = o.optInt("training_years"),
+        trainingMonths = o.optInt("training_months"),
+        selfieBase64 = if (o.isNull("selfie_base64")) null else o.optString("selfie_base64"),
+        grade = o.optString("grade", "white"),
+        createdAt = o.optLong("created_at"),
+        updatedAt = o.optLong("updated_at"),
+    )
+
+    suspend fun getMembers(ctx: Context): List<Member> {
+        val text = request("members?select=*&order=created_at.asc")
+        val arr = JSONArray(text)
+        return (0 until arr.length()).map { jsonToMember(arr.getJSONObject(it)) }
     }
 
     // Strips spacing/dashes and a leading zero so "0501234567",
@@ -29,48 +111,74 @@ object Store {
     fun normalizePhone(number: String): String =
         number.replace(Regex("[\\s-]"), "").trimStart('0')
 
-    fun getMemberByPhone(ctx: Context, prefix: String, number: String): Member? {
+    suspend fun getMemberByPhone(ctx: Context, prefix: String, number: String): Member? {
         val target = normalizePhone(number)
         return getMembers(ctx).find { it.phonePrefix == prefix && normalizePhone(it.phoneNumber) == target }
     }
 
-    fun getMemberById(ctx: Context, id: String): Member? =
-        getMembers(ctx).find { it.id == id }
+    suspend fun getMemberById(ctx: Context, id: String): Member? {
+        val text = request("members?id=eq.${enc(id)}&select=*")
+        val arr = JSONArray(text)
+        return if (arr.length() > 0) jsonToMember(arr.getJSONObject(0)) else null
+    }
 
-    fun upsertMember(ctx: Context, member: Member) {
-        val members = getMembers(ctx)
-        val idx = members.indexOfFirst { it.id == member.id }
+    suspend fun upsertMember(ctx: Context, member: Member): Member {
         member.updatedAt = System.currentTimeMillis()
-        if (idx >= 0) members[idx] = member else members.add(member)
-        saveMembers(ctx, members)
+        val body = JSONArray().put(memberToJson(member)).toString()
+        val text = request(
+            "members",
+            method = "POST",
+            body = body,
+            extraHeaders = mapOf("Prefer" to "resolution=merge-duplicates,return=representation"),
+        )
+        val arr = JSONArray(text)
+        return if (arr.length() > 0) jsonToMember(arr.getJSONObject(0)) else member
     }
 
-    fun deleteMember(ctx: Context, id: String) {
-        saveMembers(ctx, getMembers(ctx).filter { it.id != id })
+    suspend fun deleteMember(ctx: Context, id: String) {
+        request("members?id=eq.${enc(id)}", method = "DELETE")
     }
 
-    fun getRevenueEntries(ctx: Context): MutableList<RevenueEntry> {
-        val raw = prefs(ctx).getString(KEY_REVENUE, "[]") ?: "[]"
-        val arr = JSONArray(raw)
-        val list = mutableListOf<RevenueEntry>()
-        for (i in 0 until arr.length()) list.add(RevenueEntry.fromJson(arr.getJSONObject(i)))
-        return list
+    // ---------- REVENUE ----------
+
+    private fun entryToJson(e: RevenueEntry): JSONObject = JSONObject().apply {
+        put("id", e.id)
+        put("date", e.date)
+        put("class_key", e.classKey)
+        put("amount", e.amount)
+        put("student_count", e.studentCount)
+        put("note", e.note)
+        put("created_at", e.createdAt)
     }
 
-    private fun saveRevenueEntries(ctx: Context, entries: List<RevenueEntry>) {
-        val arr = JSONArray()
-        entries.forEach { arr.put(it.toJson()) }
-        prefs(ctx).edit().putString(KEY_REVENUE, arr.toString()).apply()
+    private fun jsonToEntry(o: JSONObject): RevenueEntry = RevenueEntry(
+        id = o.optString("id"),
+        date = o.optString("date"),
+        classKey = o.optString("class_key"),
+        amount = o.optDouble("amount", 0.0),
+        studentCount = o.optInt("student_count"),
+        note = o.optString("note"),
+        createdAt = o.optLong("created_at"),
+    )
+
+    suspend fun getRevenueEntries(ctx: Context): List<RevenueEntry> {
+        val text = request("revenue_entries?select=*&order=date.asc")
+        val arr = JSONArray(text)
+        return (0 until arr.length()).map { jsonToEntry(arr.getJSONObject(it)) }
     }
 
-    fun addRevenueEntry(ctx: Context, entry: RevenueEntry) {
-        val entries = getRevenueEntries(ctx)
-        entries.add(entry)
-        saveRevenueEntries(ctx, entries)
+    suspend fun addRevenueEntry(ctx: Context, entry: RevenueEntry) {
+        val body = JSONArray().put(entryToJson(entry)).toString()
+        request(
+            "revenue_entries",
+            method = "POST",
+            body = body,
+            extraHeaders = mapOf("Prefer" to "return=representation"),
+        )
     }
 
-    fun deleteRevenueEntry(ctx: Context, id: String) {
-        saveRevenueEntries(ctx, getRevenueEntries(ctx).filter { it.id != id })
+    suspend fun deleteRevenueEntry(ctx: Context, id: String) {
+        request("revenue_entries?id=eq.${enc(id)}", method = "DELETE")
     }
 
     // In-memory only (not SharedPreferences) so it resets whenever the app

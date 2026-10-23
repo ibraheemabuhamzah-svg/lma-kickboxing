@@ -12,11 +12,13 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.tabs.TabLayout
 import com.lma.kickboxing.databinding.ActivityRegistryBinding
 import com.lma.kickboxing.databinding.RowRevenueBinding
 import com.lma.kickboxing.databinding.RowScheduleBinding
 import com.lma.kickboxing.databinding.RowStudentBinding
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.temporal.IsoFields
@@ -50,12 +52,22 @@ class RegistryActivity : AppCompatActivity() {
         setupStudentsPanel()
         setupRevenuePanel()
         setupTrendsPanel()
-
-        renderDashboard()
-        renderStudents()
-        renderRevenueList()
         renderSchedule()
-        renderTrends()
+
+        lifecycleScope.launch {
+            try {
+                renderDashboard()
+                renderStudents()
+                renderRevenueList()
+                renderTrends()
+            } catch (e: Exception) {
+                Toast.makeText(this@RegistryActivity, e.message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun onDataError(e: Exception) {
+        Toast.makeText(this, e.message, Toast.LENGTH_LONG).show()
     }
 
     // ---------- TABS ----------
@@ -126,7 +138,7 @@ class RegistryActivity : AppCompatActivity() {
 
     // ---------- DASHBOARD ----------
 
-    private fun renderDashboard() {
+    private suspend fun renderDashboard() {
         val d = binding.panelDashboard
         val members = Store.getMembers(this)
         val revenue = Store.getRevenueEntries(this)
@@ -180,7 +192,9 @@ class RegistryActivity : AppCompatActivity() {
         p.spinnerFilterGrade.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("All grades") + Constants.GRADES.map { it.label })
 
         val listener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) { renderStudents() }
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                lifecycleScope.launch { try { renderStudents() } catch (e: Exception) { onDataError(e) } }
+            }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
         p.spinnerFilterRole.onItemSelectedListener = listener
@@ -188,13 +202,15 @@ class RegistryActivity : AppCompatActivity() {
         p.spinnerFilterPayment.onItemSelectedListener = listener
         p.spinnerFilterGrade.onItemSelectedListener = listener
 
-        // Debounced so typing a name doesn't re-read SharedPreferences and
-        // re-inflate the whole student list on every single keystroke.
+        // Debounced so typing a name doesn't re-fetch and re-inflate the
+        // whole student list on every single keystroke.
         p.editSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 searchRunnable?.let { searchHandler.removeCallbacks(it) }
-                val runnable = Runnable { renderStudents() }
+                val runnable = Runnable {
+                    lifecycleScope.launch { try { renderStudents() } catch (e: Exception) { onDataError(e) } }
+                }
                 searchRunnable = runnable
                 searchHandler.postDelayed(runnable, 200)
             }
@@ -202,7 +218,7 @@ class RegistryActivity : AppCompatActivity() {
         })
     }
 
-    private fun renderStudents() {
+    private suspend fun renderStudents() {
         val p = binding.panelStudents
         var members = Store.getMembers(this)
 
@@ -211,16 +227,16 @@ class RegistryActivity : AppCompatActivity() {
             members = members.filter {
                 "${it.firstName} ${it.lastName}".lowercase().contains(search) ||
                     "${it.phonePrefix}${it.phoneNumber}".contains(search)
-            }.toMutableList()
+            }
         }
         val roleIdx = p.spinnerFilterRole.selectedItemPosition
-        if (roleIdx > 0) members = members.filter { it.role == Constants.ROLES[roleIdx - 1].key }.toMutableList()
+        if (roleIdx > 0) members = members.filter { it.role == Constants.ROLES[roleIdx - 1].key }
         val classIdx = p.spinnerFilterClass.selectedItemPosition
-        if (classIdx > 0) members = members.filter { it.classCategory == Constants.CLASSES[classIdx - 1].key }.toMutableList()
+        if (classIdx > 0) members = members.filter { it.classCategory == Constants.CLASSES[classIdx - 1].key }
         val payIdx = p.spinnerFilterPayment.selectedItemPosition
-        if (payIdx > 0) members = members.filter { it.paymentType == Constants.PAYMENT_TYPES[payIdx - 1].key }.toMutableList()
+        if (payIdx > 0) members = members.filter { it.paymentType == Constants.PAYMENT_TYPES[payIdx - 1].key }
         val gradeIdx = p.spinnerFilterGrade.selectedItemPosition
-        if (gradeIdx > 0) members = members.filter { it.grade == Constants.GRADES[gradeIdx - 1].key }.toMutableList()
+        if (gradeIdx > 0) members = members.filter { it.grade == Constants.GRADES[gradeIdx - 1].key }
 
         p.studentsList.removeAllViews()
         p.tvNoStudents.visibility = if (members.isEmpty()) View.VISIBLE else View.GONE
@@ -243,9 +259,15 @@ class RegistryActivity : AppCompatActivity() {
                     val newGrade = Constants.GRADES[position].key
                     if (newGrade != member.grade) {
                         member.grade = newGrade
-                        Store.upsertMember(this@RegistryActivity, member)
-                        renderDashboard()
-                        renderStudents()
+                        lifecycleScope.launch {
+                            try {
+                                Store.upsertMember(this@RegistryActivity, member)
+                                renderDashboard()
+                                renderStudents()
+                            } catch (e: Exception) {
+                                onDataError(e)
+                            }
+                        }
                     }
                 }
                 override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -257,9 +279,15 @@ class RegistryActivity : AppCompatActivity() {
                     .setTitle("Delete profile")
                     .setMessage("Delete the profile for ${member.firstName} ${member.lastName}? This cannot be undone.")
                     .setPositiveButton("Delete") { _, _ ->
-                        Store.deleteMember(this, member.id)
-                        renderStudents()
-                        renderDashboard()
+                        lifecycleScope.launch {
+                            try {
+                                Store.deleteMember(this@RegistryActivity, member.id)
+                                renderStudents()
+                                renderDashboard()
+                            } catch (e: Exception) {
+                                onDataError(e)
+                            }
+                        }
                     }
                     .setNegativeButton("Cancel", null)
                     .show()
@@ -318,17 +346,26 @@ class RegistryActivity : AppCompatActivity() {
                 studentCount = p.editRevCount.text.toString().toIntOrNull() ?: 0,
                 note = p.editRevNote.text.toString().trim(),
             )
-            Store.addRevenueEntry(this, entry)
-            p.editRevAmount.text.clear()
-            p.editRevCount.text.clear()
-            p.editRevNote.text.clear()
-            renderRevenueList()
-            renderDashboard()
-            renderTrends()
+            p.btnSaveRevenue.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    Store.addRevenueEntry(this@RegistryActivity, entry)
+                    p.editRevAmount.text.clear()
+                    p.editRevCount.text.clear()
+                    p.editRevNote.text.clear()
+                    renderRevenueList()
+                    renderDashboard()
+                    renderTrends()
+                } catch (e: Exception) {
+                    onDataError(e)
+                } finally {
+                    p.btnSaveRevenue.isEnabled = true
+                }
+            }
         }
     }
 
-    private fun renderRevenueList() {
+    private suspend fun renderRevenueList() {
         val p = binding.panelRevenue
         val entries = Store.getRevenueEntries(this).sortedByDescending { it.date }
         p.revenueList.removeAllViews()
@@ -340,10 +377,16 @@ class RegistryActivity : AppCompatActivity() {
             row.tvSession.text = "${displayDate(e.date)} — ${Constants.scheduleLabel(e.classKey)}"
             row.tvDetails.text = "${e.studentCount} students · ${"%.2f".format(e.amount)}" + if (e.note.isNotEmpty()) " · ${e.note}" else ""
             row.btnDelete.setOnClickListener {
-                Store.deleteRevenueEntry(this, e.id)
-                renderRevenueList()
-                renderDashboard()
-                renderTrends()
+                lifecycleScope.launch {
+                    try {
+                        Store.deleteRevenueEntry(this@RegistryActivity, e.id)
+                        renderRevenueList()
+                        renderDashboard()
+                        renderTrends()
+                    } catch (ex: Exception) {
+                        onDataError(ex)
+                    }
+                }
             }
             p.revenueList.addView(row.root)
         }
@@ -368,12 +411,14 @@ class RegistryActivity : AppCompatActivity() {
         val p = binding.panelTrends
         p.spinnerTrendClass.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, Constants.SCHEDULE.map { "${it.day} ${it.time} — ${it.label}" })
         p.spinnerTrendClass.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) { renderTrends() }
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                lifecycleScope.launch { try { renderTrends() } catch (e: Exception) { onDataError(e) } }
+            }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 
-    private fun renderTrends() {
+    private suspend fun renderTrends() {
         val p = binding.panelTrends
         val classKey = Constants.SCHEDULE[max(p.spinnerTrendClass.selectedItemPosition, 0)].key
         val entries = Store.getRevenueEntries(this).filter { it.classKey == classKey }.sortedBy { it.date }

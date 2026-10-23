@@ -5,7 +5,9 @@ import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.lma.kickboxing.databinding.ActivityLookupBinding
+import kotlinx.coroutines.launch
 
 class LookupActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLookupBinding
@@ -28,15 +30,24 @@ class LookupActivity : AppCompatActivity() {
                 Toast.makeText(this, "Please enter a phone number.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val member = Store.getMemberByPhone(this, prefix, number)
-            if (member != null) {
-                startActivity(Intent(this, ViewProfileActivity::class.java).putExtra("memberId", member.id))
-            } else {
-                startActivity(
-                    Intent(this, ProfileFormActivity::class.java)
-                        .putExtra("prefix", prefix)
-                        .putExtra("number", number)
-                )
+            binding.btnContinue.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    val member = Store.getMemberByPhone(this@LookupActivity, prefix, number)
+                    if (member != null) {
+                        startActivity(Intent(this@LookupActivity, ViewProfileActivity::class.java).putExtra("memberId", member.id))
+                    } else {
+                        startActivity(
+                            Intent(this@LookupActivity, ProfileFormActivity::class.java)
+                                .putExtra("prefix", prefix)
+                                .putExtra("number", number)
+                        )
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@LookupActivity, e.message, Toast.LENGTH_LONG).show()
+                } finally {
+                    binding.btnContinue.isEnabled = true
+                }
             }
         }
     }
