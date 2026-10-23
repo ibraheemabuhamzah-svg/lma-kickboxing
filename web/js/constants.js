@@ -1,5 +1,13 @@
 // Shared constants for LMA Muay Thai & KickBoxing
 
+// Shared cloud database (Supabase) so the web app and the Android app see
+// the same data. The anon key is meant to be public (same trust model as
+// the Registry's own client-side password gate) but it does mean anyone
+// who extracts it can read/write the tables directly, bypassing the
+// Registry password — see supabase/schema.sql for the policies in place.
+const SUPABASE_URL = 'https://oaxeeljelnpobzxzfsrh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9heGVlbGplbG5wb2J6eHpmc3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3MDY2NzIsImV4cCI6MjEwODI4MjY3Mn0.SWq5rPQNuPmWWhDkHNKwNLCRgvZcYwP3cumNRVl_CLs';
+
 const GRADES = [
   { key: 'white', label: 'White Belt' },
   { key: 'red', label: 'Red Belt' },

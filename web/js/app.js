@@ -100,20 +100,28 @@ function init() {
 
   document.getElementById('selfiePreview').src = PLACEHOLDER_AVATAR;
 
-  document.getElementById('lookupBtn').addEventListener('click', () => {
+  document.getElementById('lookupBtn').addEventListener('click', async () => {
     const prefix = document.getElementById('lookupPrefix').value;
     const number = document.getElementById('lookupNumber').value.trim();
     if (!number) { showAlert('Please enter a phone number.', 'error'); return; }
-    const member = getMemberByPhone(prefix, number);
-    if (member) {
-      renderView(member);
-    } else {
-      resetForm();
-      document.getElementById('formTitle').textContent = 'Create your profile';
-      document.getElementById('formPrefix').value = prefix;
-      document.getElementById('formNumber').value = number;
-      currentMember = null;
-      showScreen('form');
+    const btn = document.getElementById('lookupBtn');
+    btn.disabled = true;
+    try {
+      const member = await getMemberByPhone(prefix, number);
+      if (member) {
+        renderView(member);
+      } else {
+        resetForm();
+        document.getElementById('formTitle').textContent = 'Create your profile';
+        document.getElementById('formPrefix').value = prefix;
+        document.getElementById('formNumber').value = number;
+        currentMember = null;
+        showScreen('form');
+      }
+    } catch (err) {
+      showAlert(err.message, 'error');
+    } finally {
+      btn.disabled = false;
     }
   });
 
@@ -122,14 +130,18 @@ function init() {
     showScreen('form');
   });
 
-  document.getElementById('deleteProfileBtn').addEventListener('click', () => {
+  document.getElementById('deleteProfileBtn').addEventListener('click', async () => {
     if (!currentMember) return;
     const name = `${currentMember.firstName} ${currentMember.lastName}`;
     if (!confirm(`Delete the profile for ${name}? This cannot be undone.`)) return;
-    deleteMember(currentMember.id);
-    currentMember = null;
-    showScreen('lookup');
-    showAlert('Profile deleted.', 'success');
+    try {
+      await deleteMember(currentMember.id);
+      currentMember = null;
+      showScreen('lookup');
+      showAlert('Profile deleted.', 'success');
+    } catch (err) {
+      showAlert(err.message, 'error');
+    }
   });
 
   document.getElementById('backBtn').addEventListener('click', () => {
@@ -152,7 +164,7 @@ function init() {
     reader.readAsDataURL(file);
   });
 
-  document.getElementById('profileForm').addEventListener('submit', (e) => {
+  document.getElementById('profileForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const gender = document.querySelector('input[name=gender]:checked');
     const classKey = document.querySelector('input[name=classKey]:checked');
@@ -181,16 +193,24 @@ function init() {
       // grade change a coach made in the meantime.
     };
 
-    // prevent duplicate phone numbers across different members
-    const existing = getMemberByPhone(member.phonePrefix, member.phoneNumber);
-    if (existing && (!currentMember || existing.id !== currentMember.id)) {
-      showAlert('A profile already exists with this phone number.', 'error');
-      return;
-    }
+    const submitBtn = e.target.querySelector('button[type=submit]');
+    submitBtn.disabled = true;
+    try {
+      // prevent duplicate phone numbers across different members
+      const existing = await getMemberByPhone(member.phonePrefix, member.phoneNumber);
+      if (existing && (!currentMember || existing.id !== currentMember.id)) {
+        showAlert('A profile already exists with this phone number.', 'error');
+        return;
+      }
 
-    const saved = upsertMember(member);
-    showAlert('Profile saved successfully.', 'success');
-    renderView(saved);
+      const saved = await upsertMember(member);
+      showAlert('Profile saved successfully.', 'success');
+      renderView(saved);
+    } catch (err) {
+      showAlert(err.message, 'error');
+    } finally {
+      submitBtn.disabled = false;
+    }
   });
 }
 

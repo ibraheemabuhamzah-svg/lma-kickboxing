@@ -125,9 +125,8 @@ function countBy(items, keyFn) {
 
 // ---------- DASHBOARD ----------
 
-function renderDashboard() {
-  const members = getMembers();
-  const revenue = getRevenueEntries();
+async function renderDashboard() {
+  const [members, revenue] = await Promise.all([getMembers(), getRevenueEntries()]);
 
   const thisMonth = monthKey(todayIso());
   const monthRevenue = revenue.filter(r => monthKey(r.date) === thisMonth).reduce((s, r) => s + Number(r.amount || 0), 0);
@@ -200,14 +199,14 @@ function seniorityText(m) {
   return `${m.trainingYears || 0}y ${m.trainingMonths || 0}m`;
 }
 
-function renderStudentsTable() {
+async function renderStudentsTable() {
   const search = document.getElementById('studentSearch').value.trim().toLowerCase();
   const fRole = document.getElementById('filterRole').value;
   const fClass = document.getElementById('filterClass').value;
   const fPayment = document.getElementById('filterPayment').value;
   const fGrade = document.getElementById('filterGrade').value;
 
-  let members = getMembers();
+  let members = await getMembers();
   if (search) {
     members = members.filter(m =>
       `${m.firstName} ${m.lastName}`.toLowerCase().includes(search) ||
@@ -242,13 +241,16 @@ function renderStudentsTable() {
   `).join('') || `<tr><td colspan="9" class="hint">No students found.</td></tr>`;
 
   tbody.querySelectorAll('.gradeSelect').forEach(sel => {
-    sel.addEventListener('change', () => {
-      const member = getMemberById(sel.dataset.id);
-      if (!member) return;
-      member.grade = sel.value;
-      upsertMember(member);
-      renderDashboard();
-      renderStudentsTable();
+    sel.addEventListener('change', async () => {
+      try {
+        const member = await getMemberById(sel.dataset.id);
+        if (!member) return;
+        member.grade = sel.value;
+        await upsertMember(member);
+        await Promise.all([renderDashboard(), renderStudentsTable()]);
+      } catch (err) {
+        alert(err.message);
+      }
     });
   });
 
@@ -257,21 +259,24 @@ function renderStudentsTable() {
   });
 
   tbody.querySelectorAll('.deleteStudentBtn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const member = getMemberById(btn.dataset.id);
-      if (!member) return;
-      const name = `${member.firstName} ${member.lastName}`;
-      if (!confirm(`Delete the profile for ${name}? This cannot be undone.`)) return;
-      deleteMember(member.id);
-      document.getElementById('studentDetail').style.display = 'none';
-      renderStudentsTable();
-      renderDashboard();
+    btn.addEventListener('click', async () => {
+      try {
+        const member = await getMemberById(btn.dataset.id);
+        if (!member) return;
+        const name = `${member.firstName} ${member.lastName}`;
+        if (!confirm(`Delete the profile for ${name}? This cannot be undone.`)) return;
+        await deleteMember(member.id);
+        document.getElementById('studentDetail').style.display = 'none';
+        await Promise.all([renderStudentsTable(), renderDashboard()]);
+      } catch (err) {
+        alert(err.message);
+      }
     });
   });
 }
 
-function renderStudentDetail(id) {
-  const m = getMemberById(id);
+async function renderStudentDetail(id) {
+  const m = await getMemberById(id);
   const panel = document.getElementById('studentDetail');
   if (!m) { panel.style.display = 'none'; return; }
   panel.style.display = '';
@@ -315,8 +320,8 @@ function scheduleLabel(key) {
   return s ? `${s.day} ${s.time} — ${s.label}` : key;
 }
 
-function renderRevenueTable() {
-  const entries = [...getRevenueEntries()].sort((a, b) => (a.date < b.date ? 1 : -1));
+async function renderRevenueTable() {
+  const entries = [...(await getRevenueEntries())].sort((a, b) => (a.date < b.date ? 1 : -1));
   const tbody = document.querySelector('#revenueTable tbody');
   tbody.innerHTML = entries.map(e => `
     <tr>
@@ -330,11 +335,13 @@ function renderRevenueTable() {
   `).join('') || `<tr><td colspan="6" class="hint">No entries yet.</td></tr>`;
 
   tbody.querySelectorAll('.delRevBtn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      deleteRevenueEntry(btn.dataset.id);
-      renderRevenueTable();
-      renderDashboard();
-      renderTrends();
+    btn.addEventListener('click', async () => {
+      try {
+        await deleteRevenueEntry(btn.dataset.id);
+        await Promise.all([renderRevenueTable(), renderDashboard(), renderTrends()]);
+      } catch (err) {
+        alert(err.message);
+      }
     });
   });
 }
@@ -347,9 +354,9 @@ function renderScheduleTable() {
   ).join('');
 }
 
-function renderTrends() {
+async function renderTrends() {
   const classKey = document.getElementById('trendClass').value;
-  const entries = getRevenueEntries()
+  const entries = (await getRevenueEntries())
     .filter(e => e.classKey === classKey)
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 
@@ -398,7 +405,7 @@ function unlock() {
 
 function initGate() {
   if (sessionStorage.getItem(GATE_KEY) === '1') { unlock(); return; }
-  document.getElementById('gateBtn').addEventListener('click', tryUnlock);
+  document.getElementById('gateBtn').addEventListener('click', () => tryUnlock());
   document.getElementById('gatePassword').addEventListener('keydown', e => {
     if (e.key === 'Enter') tryUnlock();
   });
@@ -416,41 +423,51 @@ async function tryUnlock() {
 
 // ---------- INIT ----------
 
-function initRegistry() {
+async function initRegistry() {
   initTabs();
-  renderDashboard();
   renderStudentsFilters();
-  renderStudentsTable();
   renderRevenueClassOptions();
-  renderRevenueTable();
   renderScheduleTable();
-  renderTrends();
 
   document.getElementById('revDate').value = todayIso();
 
+  try {
+    await Promise.all([renderDashboard(), renderStudentsTable(), renderRevenueTable(), renderTrends()]);
+  } catch (err) {
+    alert(err.message);
+  }
+
+  const safe = fn => () => fn().catch(err => alert(err.message));
+
   ['filterRole', 'filterClass', 'filterPayment', 'filterGrade'].forEach(id => {
-    document.getElementById(id).addEventListener('change', renderStudentsTable);
+    document.getElementById(id).addEventListener('change', safe(renderStudentsTable));
   });
-  // Debounced so typing a name doesn't re-parse localStorage and rebuild the
-  // whole table on every single keystroke.
-  document.getElementById('studentSearch').addEventListener('input', debounce(renderStudentsTable, 200));
+  // Debounced so typing a name doesn't re-fetch and rebuild the whole table
+  // on every single keystroke.
+  document.getElementById('studentSearch').addEventListener('input', debounce(safe(renderStudentsTable), 200));
 
-  document.getElementById('trendClass').addEventListener('change', renderTrends);
+  document.getElementById('trendClass').addEventListener('change', safe(renderTrends));
 
-  document.getElementById('revenueForm').addEventListener('submit', (e) => {
+  document.getElementById('revenueForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    addRevenueEntry({
-      date: document.getElementById('revDate').value,
-      classKey: document.getElementById('revClass').value,
-      amount: parseFloat(document.getElementById('revAmount').value) || 0,
-      studentCount: parseInt(document.getElementById('revCount').value, 10) || 0,
-      note: document.getElementById('revNote').value.trim(),
-    });
-    document.getElementById('revenueForm').reset();
-    document.getElementById('revDate').value = todayIso();
-    renderRevenueTable();
-    renderDashboard();
-    renderTrends();
+    const submitBtn = e.target.querySelector('button[type=submit]');
+    submitBtn.disabled = true;
+    try {
+      await addRevenueEntry({
+        date: document.getElementById('revDate').value,
+        classKey: document.getElementById('revClass').value,
+        amount: parseFloat(document.getElementById('revAmount').value) || 0,
+        studentCount: parseInt(document.getElementById('revCount').value, 10) || 0,
+        note: document.getElementById('revNote').value.trim(),
+      });
+      document.getElementById('revenueForm').reset();
+      document.getElementById('revDate').value = todayIso();
+      await Promise.all([renderRevenueTable(), renderDashboard(), renderTrends()]);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      submitBtn.disabled = false;
+    }
   });
 }
 

@@ -52,3 +52,10 @@ create policy "anon read revenue" on revenue_entries for select using (true);
 create policy "anon write revenue" on revenue_entries for insert with check (true);
 create policy "anon update revenue" on revenue_entries for update using (true);
 create policy "anon delete revenue" on revenue_entries for delete using (true);
+
+-- RLS policies alone aren't enough — Postgres still needs the base table
+-- privilege granted to the `anon` role, or writes fail with "new row
+-- violates row-level security policy" even though the policy above says
+-- true.
+grant select, insert, update, delete on members to anon;
+grant select, insert, update, delete on revenue_entries to anon;
