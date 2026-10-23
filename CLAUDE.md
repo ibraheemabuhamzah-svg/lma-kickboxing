@@ -8,7 +8,7 @@ A web application for managing a Muay Thai / Kickboxing club. Members can create
 - **UI language:** English
 - **Design:** Modern, clean (minimalist, card-based, clear typography, generous whitespace)
 - **Tech stack:** HTML, CSS, vanilla JavaScript (no frameworks)
-- **Storage:** Browser `localStorage` (no backend)
+- **Storage:** Shared Supabase (Postgres) database via its REST API — both the web app and the Android app read/write the same `members` and `revenue_entries` tables, so data entered on either platform shows up on the other. Schema + RLS policies: [supabase/schema.sql](supabase/schema.sql). No per-user auth; the public "anon" key is embedded in both clients (same trust model as the Registry's own client-side password).
 - **Charts:** Chart.js (or equivalent lightweight charting lib) for all graphs
 
 ## 1. Member Profile
@@ -26,7 +26,7 @@ Each member can create/edit their own profile. Fields:
 | Emergency contact | Phone number **and** contact person's name |
 | Class | Girls Only / Kids / Teens & Adults |
 | Payment type | Pay as you go / Monthly membership / Transfer / Free |
-| Selfie photo | Optional (stored as base64 in localStorage) |
+| Selfie photo | Optional (stored as base64 text in the shared database) |
 | Training experience | Number of years + number of months |
 | **Grade/Belt** | White, Red, Yellow, Orange, Green, Blue, Purple, Brown, Black belt — **editable only from the admin Registry, never by the member themselves** |
 
@@ -36,7 +36,7 @@ A member can also delete their own profile from the Member Area (with a confirma
 
 ## 2. Registry (Admin Back-Office)
 
-- Protected by a single password: `LmaKickBoxingR` (client-side gate — simple password prompt, checked against a SHA-256 hash rather than a plaintext comparison; stored data stays in localStorage, this is not meant to be cryptographically secure — there is no backend, so a determined attacker could still brute-force the hash offline).
+- Protected by a single password: `LmaKickBoxingR` (client-side gate — simple password prompt, checked against a SHA-256 hash rather than a plaintext comparison; this is not meant to be cryptographically secure — there is no per-user auth, so a determined attacker could brute-force the hash offline, or bypass the gate entirely by calling the Supabase API directly with the embedded anon key, same as described under Storage above).
 - From the Registry, the admin can:
   - Set/change a member's **grade/belt** (the only profile field the Registry edits directly today).
   - Delete a student's profile (with a confirmation prompt) from the Students tab.
@@ -72,13 +72,13 @@ A member can also delete their own profile from the Member Area (with a confirma
 
 These fixed sessions are the unit used for "revenue entry after each class" and for the class-by-class / week-by-week charts above.
 
-## 4. Data Model Notes (localStorage)
+## 4. Data Model Notes
 
-- `members`: array of member profile objects (id, all fields above, createdAt/updatedAt).
-- `revenueEntries`: array of { id, date, classId (day+time+class name), amount, note }.
-- Class identity should be a stable key (e.g. `mon-18-teens-adults`) matching the schedule table above, so week-over-week comparisons are reliable regardless of calendar date.
-- Registry password gate is a session-level unlock (e.g. sessionStorage flag) after correct password entry — does not encrypt the underlying localStorage data.
+- `members` table: one row per profile (id, all fields above, created_at/updated_at as epoch-millis). Web's `class`/Android's `classCategory` field is stored as `class_category` — a class-*category* key, distinct from `revenue_entries.class_key` below.
+- `revenue_entries` table: `{ id, date, class_key (schedule-slot id, e.g. "mon-18-teens"), amount, student_count, note, created_at }`.
+- Class/schedule identity is a stable key (e.g. `mon-18-teens`) matching the schedule table above, so week-over-week comparisons are reliable regardless of calendar date.
+- Registry password gate is a session-scoped unlock after correct password entry (web: `sessionStorage`; Android: an in-memory flag that resets when the app process dies, with an explicit "Lock" button) — it gates the UI only, not the underlying Supabase data (see Storage above).
 
 ## 5. Android App
 
-A companion Android app (wrapping the same web app, e.g. via a WebView/Capacitor shell) is planned, built and distributed as a downloadable APK via GitHub.
+A native Kotlin app (no WebView/Capacitor) mirroring the web app's features, built and distributed as a downloadable APK via GitHub Actions (debug build, signed with a stable checked-in keystore so updates install cleanly over previous versions). Networking uses `HttpURLConnection` + Kotlin coroutines against the same Supabase REST API as the web app — no other networking library.
