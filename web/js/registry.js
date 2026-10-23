@@ -375,15 +375,16 @@ function renderTrends() {
 
 // ---------- TABS ----------
 
+function switchToTab(tabName) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${tabName}`));
+}
+
 function initTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
-    });
+    btn.addEventListener('click', () => switchToTab(btn.dataset.tab));
   });
+  document.getElementById('goToRevenueBtn').addEventListener('click', () => switchToTab('revenue'));
 }
 
 // ---------- GATE ----------

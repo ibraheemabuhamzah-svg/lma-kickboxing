@@ -39,12 +39,20 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
       <button class="tab-btn" data-tab="students">Students</button>
-      <button class="tab-btn" data-tab="revenue">Revenue Entry</button>
+      <button class="tab-btn" data-tab="revenue">Log Revenue</button>
       <button class="tab-btn" data-tab="trends">Schedule &amp; Weekly Trends</button>
     </div>
 
     <!-- DASHBOARD -->
     <div class="tab-panel active" id="panel-dashboard">
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div>
+          <strong style="font-size:15px">Logging today's class?</strong>
+          <div class="hint">Enter the revenue collected and the number of students who showed up for a session.</div>
+        </div>
+        <button id="goToRevenueBtn" style="flex-shrink:0">Log Revenue &rarr;</button>
+      </div>
+
       <div class="stat-grid" id="statTiles"></div>
 
       <div class="card">
@@ -102,8 +110,8 @@
     <!-- REVENUE ENTRY -->
     <div class="tab-panel" id="panel-revenue">
       <div class="card">
-        <h2>Enter Today's Session</h2>
-        <p class="hint">Log revenue (and headcount) right after a class so weekly trends stay accurate.</p>
+        <h2>Log Today's Revenue &amp; Attendance</h2>
+        <p class="hint">After each class, enter how much money you collected and how many students showed up. Do this once per class, right after it ends, so weekly trends stay accurate.</p>
         <form id="revenueForm">
           <div class="grid cols-3">
             <div class="field">

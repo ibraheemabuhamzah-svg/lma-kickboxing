@@ -42,6 +42,10 @@ class RegistryActivity : AppCompatActivity() {
             finish()
         }
 
+        binding.panelDashboard.btnGoToRevenue.setOnClickListener {
+            binding.tabLayout.getTabAt(2)?.select()
+        }
+
         setupTabs()
         setupStudentsPanel()
         setupRevenuePanel()
@@ -57,7 +61,7 @@ class RegistryActivity : AppCompatActivity() {
     // ---------- TABS ----------
 
     private fun setupTabs() {
-        val tabs = listOf("Dashboard", "Students", "Revenue Entry", "Schedule & Trends")
+        val tabs = listOf("Dashboard", "Students", "Log Revenue", "Schedule & Trends")
         tabs.forEach { binding.tabLayout.addTab(binding.tabLayout.newTab().setText(it)) }
         showPanel(0)
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
