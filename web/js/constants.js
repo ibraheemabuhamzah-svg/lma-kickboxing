@@ -54,6 +54,7 @@ const SCHEDULE = [
 
 // A reasonably broad list of international dial codes.
 const DIAL_CODES = [
+  { code: '+44', country: 'United Kingdom' },
   { code: '+971', country: 'UAE' }, { code: '+966', country: 'Saudi Arabia' },
   { code: '+974', country: 'Qatar' }, { code: '+973', country: 'Bahrain' },
   { code: '+965', country: 'Kuwait' }, { code: '+968', country: 'Oman' },
@@ -68,7 +69,7 @@ const DIAL_CODES = [
   { code: '+66', country: 'Thailand' }, { code: '+84', country: 'Vietnam' },
   { code: '+86', country: 'China' }, { code: '+852', country: 'Hong Kong' },
   { code: '+81', country: 'Japan' }, { code: '+82', country: 'South Korea' },
-  { code: '+1', country: 'USA / Canada' }, { code: '+44', country: 'United Kingdom' },
+  { code: '+1', country: 'USA / Canada' },
   { code: '+33', country: 'France' }, { code: '+49', country: 'Germany' },
   { code: '+39', country: 'Italy' }, { code: '+34', country: 'Spain' },
   { code: '+351', country: 'Portugal' }, { code: '+31', country: 'Netherlands' },

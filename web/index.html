@@ -19,10 +19,10 @@
 
   <div id="alertBox"></div>
 
-  <!-- Step 1: lookup by phone -->
+  <!-- Step 1: lookup by phone (a phone number is a "contact" that can have several linked profiles) -->
   <div class="card" id="lookupCard">
-    <h2>Find or create your profile</h2>
-    <p class="hint">Enter your personal phone number to load your profile, or create a new one.</p>
+    <h2>Find or create a profile</h2>
+    <p class="hint">Enter your personal phone number. One number can have several profiles linked to it — handy for a parent registering more than one child.</p>
     <div class="lookup-box">
       <div class="field" style="flex: 0 0 150px; min-width: 130px;">
         <label>Prefix</label>
@@ -38,22 +38,15 @@
     </div>
   </div>
 
-  <!-- Step 2: profile view (existing member) -->
-  <div class="card" id="viewCard" style="display:none">
-    <div class="profile-header">
-      <img id="viewSelfie" src="" alt="" />
-      <div>
-        <div class="name" id="viewName"></div>
-        <div class="meta" id="viewMeta"></div>
-      </div>
-      <div class="spacer"></div>
-      <span class="badge" id="viewGrade"></span>
-    </div>
-    <div class="pill-row" id="viewPills"></div>
+  <!-- Step 2: list of profiles linked to this contact phone number -->
+  <div class="card" id="profilesListCard" style="display:none">
+    <h2>Your profiles</h2>
+    <p class="hint">All profiles linked to this phone number.</p>
+    <div id="profilesList"></div>
+    <p class="hint" id="noProfilesHint" style="display:none">No profiles yet.</p>
     <div class="actions">
-      <button class="secondary" id="editBtn">Edit profile</button>
-      <button class="danger" id="deleteProfileBtn">Delete profile</button>
-      <button class="ghost" id="backBtn">&larr; Back</button>
+      <button id="addAnotherBtn">+ Create another profile</button>
+      <button class="ghost" id="backHomeBtn">&larr; Back to home</button>
     </div>
   </div>
 
@@ -146,14 +139,14 @@
     </div>
 
     <div class="actions">
-      <button type="submit">Save profile</button>
+      <button type="submit">Validate</button>
       <button type="button" class="ghost" id="cancelFormBtn">Cancel</button>
     </div>
   </form>
 
 </div>
 
-<footer class="note">LMA Muay Thai &amp; KickBoxing &mdash; data is stored locally on this device.</footer>
+<footer class="note">LMA Muay Thai &amp; KickBoxing</footer>
 
 <script src="js/constants.js"></script>
 <script src="js/storage.js"></script>

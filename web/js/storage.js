@@ -90,10 +90,12 @@ function normalizePhone(number) {
   return (number || '').replace(/[\s-]/g, '').replace(/^0+/, '');
 }
 
-async function getMemberByPhone(prefix, number) {
+// A phone number is a "contact" that can have several linked profiles
+// (e.g. one parent, several kids), so lookup returns all matches.
+async function getMembersByContact(prefix, number) {
   const target = normalizePhone(number);
   const members = await getMembers();
-  return members.find(m => m.phonePrefix === prefix && normalizePhone(m.phoneNumber) === target);
+  return members.filter(m => m.phonePrefix === prefix && normalizePhone(m.phoneNumber) === target);
 }
 
 async function getMemberById(id) {

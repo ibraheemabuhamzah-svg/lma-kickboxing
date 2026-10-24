@@ -1,7 +1,13 @@
 // Member-facing profile page logic
+//
+// A phone number is treated as a "contact" that can have several linked
+// profiles (e.g. one parent registering more than one child), so lookup
+// shows a list rather than a single profile.
 
-let currentMember = null; // member being viewed/edited
+let currentMember = null; // member being edited (null when creating)
 let selfieData = null;
+let contactPrefix = '';   // the contact phone currently being viewed/added to
+let contactNumber = '';
 
 function showAlert(msg, type) {
   const box = document.getElementById('alertBox');
@@ -15,29 +21,66 @@ function fillPrefixSelect(select) {
 
 function showScreen(name) {
   document.getElementById('lookupCard').style.display = name === 'lookup' ? '' : 'none';
-  document.getElementById('viewCard').style.display = name === 'view' ? '' : 'none';
+  document.getElementById('profilesListCard').style.display = name === 'list' ? '' : 'none';
   document.getElementById('profileForm').style.display = name === 'form' ? '' : 'none';
 }
 
-function renderView(member) {
-  currentMember = member;
-  document.getElementById('viewSelfie').src = member.selfie || PLACEHOLDER_AVATAR;
-  document.getElementById('viewName').textContent = `${member.firstName} ${member.lastName}`;
-  document.getElementById('viewMeta').textContent = `${member.phonePrefix} ${member.phoneNumber} · Born ${formatDob(member.dob)}`;
-  const badge = document.getElementById('viewGrade');
-  badge.textContent = gradeLabel(member.grade);
-  badge.className = `badge ${member.grade || 'white'}`;
+async function renderProfilesList(prefix, number) {
+  contactPrefix = prefix;
+  contactNumber = number;
+  const members = await getMembersByContact(prefix, number);
 
-  const pills = document.getElementById('viewPills');
-  pills.innerHTML = [
-    roleLabel(member.role),
-    classLabel(member.class),
-    paymentLabel(member.paymentType),
-    member.gender === 'female' ? 'Female' : 'Male',
-    `${member.trainingYears || 0}y ${member.trainingMonths || 0}m training`,
-  ].map(t => `<span class="badge" style="background:#eceef1;color:#444">${t}</span>`).join('');
+  const list = document.getElementById('profilesList');
+  document.getElementById('noProfilesHint').style.display = members.length ? 'none' : '';
+  list.innerHTML = members.map(m => `
+    <div class="profile-header" style="margin-bottom:10px;">
+      <img src="${m.selfie || PLACEHOLDER_AVATAR}" alt="" />
+      <div>
+        <div class="name">${escapeHtml(m.firstName)} ${escapeHtml(m.lastName)}</div>
+        <div class="meta">Born ${formatDob(m.dob)}</div>
+      </div>
+      <div class="spacer"></div>
+      <span class="badge ${m.grade || 'white'}">${gradeLabel(m.grade)}</span>
+    </div>
+    <div class="pill-row" style="margin-bottom:10px;">
+      ${[roleLabel(m.role), classLabel(m.class), paymentLabel(m.paymentType),
+         m.gender === 'female' ? 'Female' : 'Male',
+         `${m.trainingYears || 0}y ${m.trainingMonths || 0}m training`]
+        .map(t => `<span class="badge" style="background:#eceef1;color:#444">${t}</span>`).join('')}
+    </div>
+    <div class="actions" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid var(--line);">
+      <button class="secondary editProfileBtn" data-id="${m.id}">Edit</button>
+      <button class="danger deleteProfileBtn" data-id="${m.id}">Delete</button>
+    </div>
+  `).join('');
 
-  showScreen('view');
+  list.querySelectorAll('.editProfileBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const member = members.find(m => m.id === btn.dataset.id);
+      if (!member) return;
+      currentMember = member;
+      fillFormFromMember(member);
+      showScreen('form');
+    });
+  });
+
+  list.querySelectorAll('.deleteProfileBtn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const member = members.find(m => m.id === btn.dataset.id);
+      if (!member) return;
+      const name = `${member.firstName} ${member.lastName}`;
+      if (!confirm(`Delete the profile for ${name}? This cannot be undone.`)) return;
+      try {
+        await deleteMember(member.id);
+        showAlert('Profile deleted.', 'success');
+        await renderProfilesList(contactPrefix, contactNumber);
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    });
+  });
+
+  showScreen('list');
 }
 
 function resetForm() {
@@ -52,7 +95,7 @@ function resetForm() {
 
 function fillFormFromMember(member) {
   resetForm();
-  document.getElementById('formTitle').textContent = 'Edit your profile';
+  document.getElementById('formTitle').textContent = 'Edit profile';
   const r = document.querySelector(`input[name=role][value=${member.role || 'student'}]`);
   if (r) r.checked = true;
   document.getElementById('firstName').value = member.firstName || '';
@@ -62,7 +105,7 @@ function fillFormFromMember(member) {
     const r = document.querySelector(`input[name=gender][value=${member.gender}]`);
     if (r) r.checked = true;
   }
-  document.getElementById('formPrefix').value = member.phonePrefix || '+971';
+  document.getElementById('formPrefix').value = member.phonePrefix || '+44';
   document.getElementById('formNumber').value = member.phoneNumber || '';
   document.getElementById('whatsapp').value = member.whatsapp || '';
   document.getElementById('emergencyName').value = member.emergencyName || '';
@@ -81,11 +124,20 @@ function fillFormFromMember(member) {
   badge.className = `badge ${member.grade || 'white'}`;
 }
 
+function startNewProfile(prefix, number) {
+  resetForm();
+  currentMember = null;
+  document.getElementById('formTitle').textContent = 'Create your profile';
+  document.getElementById('formPrefix').value = prefix;
+  document.getElementById('formNumber').value = number;
+  showScreen('form');
+}
+
 function init() {
   fillPrefixSelect(document.getElementById('lookupPrefix'));
   fillPrefixSelect(document.getElementById('formPrefix'));
-  document.getElementById('formPrefix').value = '+971';
-  document.getElementById('lookupPrefix').value = '+971';
+  document.getElementById('formPrefix').value = '+44';
+  document.getElementById('lookupPrefix').value = '+44';
 
   document.getElementById('paymentType').innerHTML =
     PAYMENT_TYPES.map(p => `<option value="${p.key}">${p.label}</option>`).join('');
@@ -107,16 +159,13 @@ function init() {
     const btn = document.getElementById('lookupBtn');
     btn.disabled = true;
     try {
-      const member = await getMemberByPhone(prefix, number);
-      if (member) {
-        renderView(member);
+      const members = await getMembersByContact(prefix, number);
+      if (members.length > 0) {
+        await renderProfilesList(prefix, number);
       } else {
-        resetForm();
-        document.getElementById('formTitle').textContent = 'Create your profile';
-        document.getElementById('formPrefix').value = prefix;
-        document.getElementById('formNumber').value = number;
-        currentMember = null;
-        showScreen('form');
+        contactPrefix = prefix;
+        contactNumber = number;
+        startNewProfile(prefix, number);
       }
     } catch (err) {
       showAlert(err.message, 'error');
@@ -125,32 +174,27 @@ function init() {
     }
   });
 
-  document.getElementById('editBtn').addEventListener('click', () => {
-    fillFormFromMember(currentMember);
-    showScreen('form');
+  document.getElementById('addAnotherBtn').addEventListener('click', () => {
+    startNewProfile(contactPrefix, contactNumber);
   });
 
-  document.getElementById('deleteProfileBtn').addEventListener('click', async () => {
-    if (!currentMember) return;
-    const name = `${currentMember.firstName} ${currentMember.lastName}`;
-    if (!confirm(`Delete the profile for ${name}? This cannot be undone.`)) return;
-    try {
-      await deleteMember(currentMember.id);
-      currentMember = null;
-      showScreen('lookup');
-      showAlert('Profile deleted.', 'success');
-    } catch (err) {
-      showAlert(err.message, 'error');
-    }
-  });
-
-  document.getElementById('backBtn').addEventListener('click', () => {
-    currentMember = null;
+  document.getElementById('backHomeBtn').addEventListener('click', () => {
+    contactPrefix = '';
+    contactNumber = '';
+    document.getElementById('lookupNumber').value = '';
     showScreen('lookup');
   });
 
-  document.getElementById('cancelFormBtn').addEventListener('click', () => {
-    if (currentMember) { renderView(currentMember); } else { showScreen('lookup'); }
+  document.getElementById('cancelFormBtn').addEventListener('click', async () => {
+    if (contactPrefix && contactNumber) {
+      try {
+        await renderProfilesList(contactPrefix, contactNumber);
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    } else {
+      showScreen('lookup');
+    }
   });
 
   document.getElementById('selfieInput').addEventListener('change', (e) => {
@@ -196,16 +240,9 @@ function init() {
     const submitBtn = e.target.querySelector('button[type=submit]');
     submitBtn.disabled = true;
     try {
-      // prevent duplicate phone numbers across different members
-      const existing = await getMemberByPhone(member.phonePrefix, member.phoneNumber);
-      if (existing && (!currentMember || existing.id !== currentMember.id)) {
-        showAlert('A profile already exists with this phone number.', 'error');
-        return;
-      }
-
       const saved = await upsertMember(member);
       showAlert('Profile saved successfully.', 'success');
-      renderView(saved);
+      await renderProfilesList(saved.phonePrefix, saved.phoneNumber);
     } catch (err) {
       showAlert(err.message, 'error');
     } finally {
