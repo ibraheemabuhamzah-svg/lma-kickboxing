@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -37,6 +38,8 @@ class RegistryActivity : AppCompatActivity() {
     private var revDateIso: String = ""
     private val searchHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
+    private var lastDashboardMembers: List<Member> = emptyList()
+    private var lastDashboardRevenue: List<RevenueEntry> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +58,7 @@ class RegistryActivity : AppCompatActivity() {
         }
 
         setupTabs()
+        setupDashboardPanel()
         setupStudentsPanel()
         setupRevenuePanel()
         setupTrendsPanel()
@@ -164,21 +168,55 @@ class RegistryActivity : AppCompatActivity() {
 
     // ---------- DASHBOARD ----------
 
+    private fun setupDashboardPanel() {
+        val d = binding.panelDashboard
+        d.spinnerDashboardClass.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("All classes") + Constants.CLASSES.map { it.label })
+        d.spinnerDashboardClass.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                renderBreakdownCharts(lastDashboardMembers)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        val tileActions = listOf(
+            d.tileTotalStudents to "students",
+            d.tileRevenueMonth to "revenueMonth",
+            d.tileRevenueWeek to "revenueWeek",
+            d.tileRevenueTotal to "revenueTotal",
+            d.tileSessionsLogged to "sessions",
+        )
+        tileActions.forEach { (tile, action) -> tile.setOnClickListener { showStatDetail(action) } }
+    }
+
     private suspend fun renderDashboard() {
         val d = binding.panelDashboard
         val members = Store.getMembers(this)
         val revenue = Store.getRevenueEntries(this)
+        lastDashboardMembers = members
+        lastDashboardRevenue = revenue
 
-        val thisMonth = monthKey(SimpleDateFormat("yyyy-MM-dd", Locale.US).format(java.util.Date()))
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(java.util.Date())
+        val thisMonth = monthKey(todayStr)
+        val thisWeek = weekKey(todayStr)
         val monthRevenue = revenue.filter { monthKey(it.date) == thisMonth }.sumOf { it.amount }
+        val weekRevenue = revenue.filter { weekKey(it.date) == thisWeek }.sumOf { it.amount }
         val totalRevenue = revenue.sumOf { it.amount }
+
+        val monthsWithRevenue = revenue.map { monthKey(it.date) }.filter { it.isNotEmpty() }.toSet()
+        val weeksWithRevenue = revenue.map { weekKey(it.date) }.filter { it.isNotEmpty() }.toSet()
+        val avgMonthlyRevenue = if (monthsWithRevenue.isNotEmpty()) totalRevenue / monthsWithRevenue.size else 0.0
+        val avgWeeklyRevenue = if (weeksWithRevenue.isNotEmpty()) totalRevenue / weeksWithRevenue.size else 0.0
 
         d.tvTotalStudents.text = members.size.toString()
         // Math.round, not toInt() (which truncates toward zero), so this
         // matches the web app's toFixed(0) rounding for the same totals.
         d.tvMonthRevenue.text = Math.round(monthRevenue).toString()
+        d.tvWeekRevenue.text = Math.round(weekRevenue).toString()
         d.tvTotalRevenue.text = Math.round(totalRevenue).toString()
         d.tvSessionsLogged.text = revenue.size.toString()
+        d.tvAvgMonthlyRevenue.text = Math.round(avgMonthlyRevenue).toString()
+        d.tvAvgWeeklyRevenue.text = Math.round(avgWeeklyRevenue).toString()
+        d.statDetail.visibility = View.GONE
 
         val monthMap = linkedMapOf<String, Float>()
         revenue.sortedBy { it.date }.forEach { e ->
@@ -187,25 +225,121 @@ class RegistryActivity : AppCompatActivity() {
         }
         d.chartMonthlyRevenue.setData(monthMap.keys.toList(), monthMap.values.toList(), "#E30613")
 
+        val weekMap = linkedMapOf<String, Float>()
+        revenue.sortedBy { it.date }.forEach { e ->
+            val k = weekKey(e.date)
+            if (k.isNotEmpty()) weekMap[k] = (weekMap[k] ?: 0f) + e.amount.toFloat()
+        }
+        d.chartWeeklyRevenue.setData(weekMap.keys.toList(), weekMap.values.toList(), "#2E9E4B")
+
+        renderBreakdownCharts(members)
+    }
+
+    // Age/Seniority/Payment/Grade charts, optionally sliced to one class via
+    // the "Breakdown for" filter. Coaches don't have a class/payment-type/
+    // seniority, so they're excluded from those two charts (but still
+    // counted in Age/Grade).
+    private fun renderBreakdownCharts(members: List<Member>) {
+        val d = binding.panelDashboard
+        val classIdx = d.spinnerDashboardClass.selectedItemPosition
+        val inClass = if (classIdx > 0) members.filter { it.classCategory == Constants.CLASSES[classIdx - 1].key } else members
+        val nonCoach = inClass.filter { it.role != "coach" }
+
         val ageLabels = listOf("Under 12", "12-17", "18-25", "26-35", "36-45", "46+")
         val ageCounts = ageLabels.associateWith { 0 }.toMutableMap()
-        members.forEach { m -> ageFromDob(m.dob)?.let { ageCounts[ageBand(it)] = (ageCounts[ageBand(it)] ?: 0) + 1 } }
+        inClass.forEach { m -> ageFromDob(m.dob)?.let { ageCounts[ageBand(it)] = (ageCounts[ageBand(it)] ?: 0) + 1 } }
         d.chartAge.setData(ageLabels, ageLabels.map { (ageCounts[it] ?: 0).toFloat() })
 
         val senLabels = listOf("< 6 months", "6-12 months", "1-2 years", "2-5 years", "5+ years")
         val senCounts = senLabels.associateWith { 0 }.toMutableMap()
-        members.forEach { val b = seniorityBand(seniorityMonths(it)); senCounts[b] = (senCounts[b] ?: 0) + 1 }
+        nonCoach.forEach { val b = seniorityBand(seniorityMonths(it)); senCounts[b] = (senCounts[b] ?: 0) + 1 }
         d.chartSeniority.setData(senLabels, senLabels.map { (senCounts[it] ?: 0).toFloat() })
 
         val payLabels = Constants.PAYMENT_TYPES.map { it.label }
         val payCounts = Constants.PAYMENT_TYPES.associate { it.key to 0 }.toMutableMap()
-        members.forEach { payCounts[it.paymentType] = (payCounts[it.paymentType] ?: 0) + 1 }
+        nonCoach.forEach { payCounts[it.paymentType] = (payCounts[it.paymentType] ?: 0) + 1 }
         d.chartPayment.setData(payLabels, Constants.PAYMENT_TYPES.map { (payCounts[it.key] ?: 0).toFloat() })
 
         val gradeLabels = Constants.GRADES.map { it.label }
         val gradeCounts = Constants.GRADES.associate { it.key to 0 }.toMutableMap()
-        members.forEach { gradeCounts[it.grade] = (gradeCounts[it.grade] ?: 0) + 1 }
-        d.chartGrade.setData(gradeLabels, Constants.GRADES.map { (gradeCounts[it.key] ?: 0).toFloat() })
+        inClass.forEach { gradeCounts[it.grade] = (gradeCounts[it.grade] ?: 0) + 1 }
+        val gradeColors = Constants.GRADES.map { ContextCompat.getColor(this, Constants.gradeColorRes(it.key)) }
+        d.chartGrade.setData(gradeLabels, Constants.GRADES.map { (gradeCounts[it.key] ?: 0).toFloat() }, gradeColors, true)
+    }
+
+    private fun entryDetailLines(entries: List<RevenueEntry>): List<String> {
+        if (entries.isEmpty()) return listOf("No entries.")
+        val total = entries.sumOf { it.amount }
+        val out = mutableListOf("${entries.size} session(s) · total ${"%.2f".format(total)}", "")
+        entries.forEach { e -> out.add("${displayDate(e.date)} — ${Constants.scheduleLabel(e.classKey)}: ${"%.2f".format(e.amount)}") }
+        return out
+    }
+
+    private fun showStatDetail(action: String) {
+        val d = binding.panelDashboard
+        val members = lastDashboardMembers
+        val revenue = lastDashboardRevenue
+        var title = ""
+        val lines = mutableListOf<String>()
+
+        when (action) {
+            "students" -> {
+                title = "Total Students"
+                val byRole = members.groupingBy { Constants.roleLabel(it.role) }.eachCount()
+                val byClass = members.filter { it.role != "coach" }.groupingBy { Constants.classLabel(it.classCategory) }.eachCount()
+                lines.add("By status:")
+                byRole.forEach { (k, v) -> lines.add("  $k: $v") }
+                lines.add("")
+                lines.add("By class (students & assistants):")
+                byClass.forEach { (k, v) -> lines.add("  $k: $v") }
+            }
+            "revenueMonth", "revenueWeek" -> {
+                val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(java.util.Date())
+                val key = if (action == "revenueMonth") monthKey(todayStr) else weekKey(todayStr)
+                val entries = revenue.filter { (if (action == "revenueMonth") monthKey(it.date) else weekKey(it.date)) == key }.sortedByDescending { it.date }
+                title = if (action == "revenueMonth") "Revenue This Month" else "Revenue This Week"
+                lines.addAll(entryDetailLines(entries))
+            }
+            "revenueTotal" -> {
+                title = "Total Revenue"
+                val byMonth = linkedMapOf<String, Double>()
+                revenue.sortedBy { it.date }.forEach { e -> val k = monthKey(e.date); if (k.isNotEmpty()) byMonth[k] = (byMonth[k] ?: 0.0) + e.amount }
+                val total = revenue.sumOf { it.amount }
+                lines.add("${revenue.size} session(s) · total ${"%.2f".format(total)}")
+                lines.add("")
+                byMonth.keys.sortedDescending().forEach { m -> lines.add("$m: ${"%.2f".format(byMonth[m])}") }
+            }
+            "sessions" -> {
+                title = "Sessions Logged"
+                lines.addAll(entryDetailLines(revenue.sortedByDescending { it.date }))
+            }
+        }
+
+        d.statDetail.removeAllViews()
+        val density = resources.displayMetrics.density
+        val titleView = TextView(this).apply {
+            text = title
+            textSize = 16f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextColor(ContextCompat.getColor(this@RegistryActivity, R.color.ink))
+        }
+        d.statDetail.addView(titleView)
+        lines.forEach { line ->
+            val tv = TextView(this).apply {
+                text = line
+                textSize = 13f
+                setTextColor(ContextCompat.getColor(this@RegistryActivity, R.color.ink))
+                setPadding(0, (4 * density).toInt(), 0, 0)
+            }
+            d.statDetail.addView(tv)
+        }
+        val closeBtn = Button(this, null, android.R.attr.borderlessButtonStyle).apply {
+            text = "Close"
+            setPadding(0, (12 * density).toInt(), 0, 0)
+            setOnClickListener { d.statDetail.visibility = View.GONE }
+        }
+        d.statDetail.addView(closeBtn)
+        d.statDetail.visibility = View.VISIBLE
     }
 
     // ---------- STUDENTS ----------
@@ -273,9 +407,12 @@ class RegistryActivity : AppCompatActivity() {
             row.tvName.text = "${member.firstName} ${member.lastName}" +
                 if (member.role != "student") "  ·  ${Constants.roleLabel(member.role)}" else ""
             val age = ageFromDob(member.dob)
+            val isCoach = member.role == "coach"
+            val classText = if (isCoach) "-" else Constants.classLabel(member.classCategory)
+            val paymentText = if (isCoach) "-" else Constants.paymentLabel(member.paymentType)
+            val trainingText = if (isCoach) "-" else "${member.trainingYears}y ${member.trainingMonths}m"
             row.tvMeta.text = "${member.phonePrefix} ${member.phoneNumber} · ${age ?: "-"}y · " +
-                "${Constants.classLabel(member.classCategory)} · ${Constants.paymentLabel(member.paymentType)} · " +
-                "${member.trainingYears}y ${member.trainingMonths}m"
+                "$classText · $paymentText · $trainingText"
 
             row.spinnerGrade.adapter = GradeSpinnerAdapter()
             val gradeIdx2 = Constants.GRADES.indexOfFirst { it.key == member.grade }.coerceAtLeast(0)
@@ -326,26 +463,41 @@ class RegistryActivity : AppCompatActivity() {
 
     private fun showStudentDetail(m: Member) {
         val age = ageFromDob(m.dob)
-        val msg = """
-            Status: ${Constants.roleLabel(m.role)}
-            Phone: ${m.phonePrefix} ${m.phoneNumber}
-            WhatsApp: ${m.whatsapp.ifEmpty { "-" }}
-            Gender: ${if (m.gender == "female") "Female" else "Male"}
-            Date of birth: ${if (m.dob.isNotEmpty()) displayDate(m.dob) else "-"} ${if (age != null) "($age y)" else ""}
-            Emergency contact: ${m.emergencyName.ifEmpty { "-" }} (${m.emergencyPhone.ifEmpty { "-" }})
-            Class: ${Constants.classLabel(m.classCategory)}
-            Payment type: ${Constants.paymentLabel(m.paymentType)}
-            Training experience: ${m.trainingYears}y ${m.trainingMonths}m
-            Grade: ${Constants.gradeLabel(m.grade)}
-        """.trimIndent()
+        val lines = mutableListOf(
+            "Status: ${Constants.roleLabel(m.role)}",
+            "Phone: ${m.phonePrefix} ${m.phoneNumber}",
+            "WhatsApp: ${m.whatsapp.ifEmpty { "-" }}",
+            "Gender: ${if (m.gender == "female") "Female" else "Male"}",
+            "Date of birth: ${if (m.dob.isNotEmpty()) displayDate(m.dob) else "-"} ${if (age != null) "($age y)" else ""}",
+            "Emergency contact: ${m.emergencyName.ifEmpty { "-" }} (${m.emergencyPhone.ifEmpty { "-" }})",
+        )
+        if (m.role != "coach") {
+            lines.add("Class: ${Constants.classLabel(m.classCategory)}")
+            lines.add("Payment type: ${Constants.paymentLabel(m.paymentType)}")
+            lines.add("Training experience: ${m.trainingYears}y ${m.trainingMonths}m")
+        }
+        lines.add("Grade: ${Constants.gradeLabel(m.grade)}")
         AlertDialog.Builder(this)
             .setTitle("${m.firstName} ${m.lastName}")
-            .setMessage(msg)
+            .setMessage(lines.joinToString("\n"))
             .setPositiveButton("Close", null)
             .show()
     }
 
     // ---------- REVENUE ----------
+
+    // Pre-selects the class/session spinner to match whatever is scheduled
+    // on the chosen day (e.g. picking a Wednesday selects Girls Only, the
+    // first Wednesday session) — the coach can still change it if there's
+    // more than one session that day.
+    private fun autoSelectClassForDate(dateStr: String) {
+        val jsDay = try {
+            val ld = LocalDate.parse(dateStr)
+            if (ld.dayOfWeek == java.time.DayOfWeek.SUNDAY) 0 else ld.dayOfWeek.value
+        } catch (e: Exception) { return }
+        val idx = Constants.SCHEDULE.indexOfFirst { it.dayIndex == jsDay }
+        if (idx >= 0) binding.panelRevenue.spinnerRevClass.setSelection(idx)
+    }
 
     private fun setupRevenuePanel() {
         val p = binding.panelRevenue
@@ -354,10 +506,12 @@ class RegistryActivity : AppCompatActivity() {
         val cal = Calendar.getInstance()
         revDateIso = "%04d-%02d-%02d".format(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
         p.btnRevDate.text = displayDate(revDateIso)
+        autoSelectClassForDate(revDateIso)
         p.btnRevDate.setOnClickListener {
             DatePickerDialog(this, { _, y, mo, day ->
                 revDateIso = "%04d-%02d-%02d".format(y, mo + 1, day)
                 p.btnRevDate.text = displayDate(revDateIso)
+                autoSelectClassForDate(revDateIso)
             }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
         }
 
@@ -381,6 +535,10 @@ class RegistryActivity : AppCompatActivity() {
                     p.editRevAmount.text.clear()
                     p.editRevCount.text.clear()
                     p.editRevNote.text.clear()
+                    val todayCal = Calendar.getInstance()
+                    revDateIso = "%04d-%02d-%02d".format(todayCal.get(Calendar.YEAR), todayCal.get(Calendar.MONTH) + 1, todayCal.get(Calendar.DAY_OF_MONTH))
+                    p.btnRevDate.text = displayDate(revDateIso)
+                    autoSelectClassForDate(revDateIso)
                     renderRevenueList()
                     renderDashboard()
                     renderTrends()

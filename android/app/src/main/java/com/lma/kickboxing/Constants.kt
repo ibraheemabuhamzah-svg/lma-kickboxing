@@ -44,17 +44,19 @@ object Constants {
         Option("assistant", "Assistant (Volunteer)"),
     )
 
-    data class ScheduleSlot(val key: String, val day: String, val time: String, val classKey: String, val label: String)
+    // dayIndex follows JS Date.getDay() convention (0 = Sunday ... 6 = Saturday)
+    // so it lines up with the web app's SCHEDULE entries.
+    data class ScheduleSlot(val key: String, val day: String, val time: String, val classKey: String, val label: String, val dayIndex: Int)
 
     val SCHEDULE = listOf(
-        ScheduleSlot("mon-18-teens", "Monday", "18:00 - 19:00", "teens_adults", "Teens & Adults"),
-        ScheduleSlot("wed-18-girls", "Wednesday", "18:00 - 19:00", "girls", "Girls Only"),
-        ScheduleSlot("wed-1915-kids", "Wednesday", "19:15 - 20:15", "kids", "Kids"),
-        ScheduleSlot("thu-18-teens", "Thursday", "18:00 - 19:00", "teens_adults", "Teens & Adults"),
-        ScheduleSlot("fri-18-sparring", "Friday", "18:00 - 19:00", "teens_adults", "Teens & Adults Sparring"),
-        ScheduleSlot("sat-09-girls", "Saturday", "09:00 - 10:00", "girls", "Girls Only"),
-        ScheduleSlot("sat-1215-kids", "Saturday", "12:15 - 13:15", "kids", "Kids"),
-        ScheduleSlot("sat-1315-teens", "Saturday", "13:15 - 14:15", "teens_adults", "Teens & Adults"),
+        ScheduleSlot("mon-18-teens", "Monday", "18:00 - 19:00", "teens_adults", "Teens & Adults", 1),
+        ScheduleSlot("wed-18-girls", "Wednesday", "18:00 - 19:00", "girls", "Girls Only", 3),
+        ScheduleSlot("wed-1915-kids", "Wednesday", "19:15 - 20:15", "kids", "Kids", 3),
+        ScheduleSlot("thu-18-teens", "Thursday", "18:00 - 19:00", "teens_adults", "Teens & Adults", 4),
+        ScheduleSlot("fri-18-sparring", "Friday", "18:00 - 19:00", "teens_adults", "Teens & Adults Sparring", 5),
+        ScheduleSlot("sat-09-girls", "Saturday", "09:00 - 10:00", "girls", "Girls Only", 6),
+        ScheduleSlot("sat-1215-kids", "Saturday", "12:15 - 13:15", "kids", "Kids", 6),
+        ScheduleSlot("sat-1315-teens", "Saturday", "13:15 - 14:15", "teens_adults", "Teens & Adults", 6),
     )
 
     val DIAL_CODES = listOf(

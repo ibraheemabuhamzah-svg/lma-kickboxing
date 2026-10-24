@@ -41,6 +41,8 @@ class ProfileFormActivity : AppCompatActivity() {
         binding.btnDob.setOnClickListener { showDatePicker() }
         binding.btnPickSelfie.setOnClickListener { pickImage.launch("image/*") }
         binding.btnSave.setOnClickListener { save() }
+        binding.radioRole.setOnCheckedChangeListener { _, _ -> updateTrainingVisibility() }
+        updateTrainingVisibility()
 
         val memberId = intent.getStringExtra("memberId")
         if (memberId != null) {
@@ -69,6 +71,13 @@ class ProfileFormActivity : AppCompatActivity() {
     private fun setPrefixSelection(prefix: String) {
         val idx = Constants.DIAL_CODES.indexOfFirst { it.first == prefix }
         if (idx >= 0) binding.spinnerPrefix.setSelection(idx)
+    }
+
+    // Coaches don't have a class, payment type or training-seniority —
+    // those fields only make sense for students/assistants attending a class.
+    private fun updateTrainingVisibility() {
+        val isCoach = binding.radioRole.checkedRadioButtonId == R.id.radioCoach
+        binding.trainingSection.visibility = if (isCoach) android.view.View.GONE else android.view.View.VISIBLE
     }
 
     private fun fillForm(m: Member) {
@@ -156,19 +165,20 @@ class ProfileFormActivity : AppCompatActivity() {
             R.id.radioFemale -> "female"
             else -> ""
         }
+        val role = when (binding.radioRole.checkedRadioButtonId) {
+            R.id.radioCoach -> "coach"
+            R.id.radioAssistant -> "assistant"
+            else -> "student"
+        }
+        val isCoach = role == "coach"
         val classCategory = when (binding.radioClass.checkedRadioButtonId) {
             R.id.radioGirls -> "girls"
             R.id.radioKids -> "kids"
             R.id.radioTeensAdults -> "teens_adults"
             else -> ""
         }
-        val role = when (binding.radioRole.checkedRadioButtonId) {
-            R.id.radioCoach -> "coach"
-            R.id.radioAssistant -> "assistant"
-            else -> "student"
-        }
 
-        if (firstName.isEmpty() || lastName.isEmpty() || number.isEmpty() || dobIso.isEmpty() || gender.isEmpty() || classCategory.isEmpty()) {
+        if (firstName.isEmpty() || lastName.isEmpty() || number.isEmpty() || dobIso.isEmpty() || gender.isEmpty() || (!isCoach && classCategory.isEmpty())) {
             Toast.makeText(this, "Please fill in all required fields.", Toast.LENGTH_SHORT).show()
             return
         }
@@ -187,10 +197,13 @@ class ProfileFormActivity : AppCompatActivity() {
                 member.whatsapp = binding.editWhatsapp.text.toString().trim()
                 member.emergencyName = binding.editEmergencyName.text.toString().trim()
                 member.emergencyPhone = binding.editEmergencyPhone.text.toString().trim()
-                member.classCategory = classCategory
-                member.paymentType = Constants.PAYMENT_TYPES[binding.spinnerPayment.selectedItemPosition].key
-                member.trainingYears = binding.editYears.text.toString().toIntOrNull() ?: 0
-                member.trainingMonths = binding.editMonths.text.toString().toIntOrNull() ?: 0
+                // Coaches don't have a class, payment type or training-seniority —
+                // save these as empty/zero rather than whatever the hidden fields
+                // still happen to hold.
+                member.classCategory = if (isCoach) "" else classCategory
+                member.paymentType = if (isCoach) "" else Constants.PAYMENT_TYPES[binding.spinnerPayment.selectedItemPosition].key
+                member.trainingYears = if (isCoach) 0 else binding.editYears.text.toString().toIntOrNull() ?: 0
+                member.trainingMonths = if (isCoach) 0 else binding.editMonths.text.toString().toIntOrNull() ?: 0
                 member.selfieBase64 = selfieBase64
                 if (existingMember == null) {
                     member.grade = "white"

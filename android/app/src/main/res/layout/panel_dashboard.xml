@@ -25,48 +25,76 @@
             android:text="Log Revenue" android:textAllCaps="false" />
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
-
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
-            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="16dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp">
+        <LinearLayout android:id="@+id/tileTotalStudents" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true" android:padding="16dp">
             <TextView android:id="@+id/tvTotalStudents" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total Students" android:textSize="12sp" android:textColor="@color/muted" />
         </LinearLayout>
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
-            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="16dp">
+        <LinearLayout android:id="@+id/tileRevenueMonth" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true" android:padding="16dp">
             <TextView android:id="@+id/tvMonthRevenue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Revenue This Month" android:textSize="12sp" android:textColor="@color/muted" />
         </LinearLayout>
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp">
+        <LinearLayout android:id="@+id/tileRevenueWeek" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true" android:padding="16dp">
+            <TextView android:id="@+id/tvWeekRevenue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Revenue This Week" android:textSize="12sp" android:textColor="@color/muted" />
+        </LinearLayout>
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
-            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="16dp">
+        <LinearLayout android:id="@+id/tileRevenueTotal" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true" android:padding="16dp">
             <TextView android:id="@+id/tvTotalRevenue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total Revenue" android:textSize="12sp" android:textColor="@color/muted" />
         </LinearLayout>
+    </LinearLayout>
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
-            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="16dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="16dp">
+        <LinearLayout android:id="@+id/tileSessionsLogged" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:foreground="?attr/selectableItemBackground" android:clickable="true" android:focusable="true" android:padding="16dp">
             <TextView android:id="@+id/tvSessionsLogged" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sessions Logged" android:textSize="12sp" android:textColor="@color/muted" />
         </LinearLayout>
+
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="16dp">
+            <TextView android:id="@+id/tvAvgMonthlyRevenue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Avg Monthly Revenue" android:textSize="12sp" android:textColor="@color/muted" />
+        </LinearLayout>
     </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="16dp">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_margin="4dp"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="16dp">
+            <TextView android:id="@+id/tvAvgWeeklyRevenue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Avg Weekly Revenue" android:textSize="12sp" android:textColor="@color/muted" />
+        </LinearLayout>
+        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:layout_margin="4dp" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/statDetail" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:background="@drawable/bg_card" android:padding="16dp" android:layout_marginBottom="16dp" android:visibility="gone" />
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
         android:background="@drawable/bg_card" android:padding="16dp" android:layout_marginBottom="16dp">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Monthly Revenue Evolution" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" android:layout_marginBottom="8dp" />
-        <com.lma.kickboxing.widgets.LineChartView android:id="@+id/chartMonthlyRevenue" android:layout_width="match_parent" android:layout_height="220dp" />
+        <com.lma.kickboxing.widgets.LineChartView android:id="@+id/chartMonthlyRevenue" android:layout_width="match_parent" android:layout_height="200dp" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:background="@drawable/bg_card" android:padding="16dp" android:layout_marginBottom="16dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Weekly Revenue Evolution" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" android:layout_marginBottom="8dp" />
+        <com.lma.kickboxing.widgets.LineChartView android:id="@+id/chartWeeklyRevenue" android:layout_width="match_parent" android:layout_height="200dp" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"
+        android:background="@drawable/bg_card" android:padding="16dp" android:layout_marginBottom="16dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Breakdown for:" android:textStyle="bold" android:textSize="13sp" android:textColor="@color/ink" android:layout_marginEnd="12dp" />
+        <Spinner android:id="@+id/spinnerDashboardClass" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" />
     </LinearLayout>
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
@@ -90,7 +118,7 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
         android:background="@drawable/bg_card" android:padding="16dp">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Students by Grade" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" android:layout_marginBottom="8dp" />
-        <com.lma.kickboxing.widgets.BarChartView android:id="@+id/chartGrade" android:layout_width="match_parent" android:layout_height="200dp" />
+        <com.lma.kickboxing.widgets.BarChartView android:id="@+id/chartGrade" android:layout_width="match_parent" android:layout_height="220dp" />
     </LinearLayout>
 
 </LinearLayout>

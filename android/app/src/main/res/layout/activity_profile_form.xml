@@ -55,22 +55,24 @@
         <EditText android:id="@+id/editEmergencyName" style="@style/FormInput" android:hint="Emergency contact name" />
         <EditText android:id="@+id/editEmergencyPhone" style="@style/FormInput" android:hint="Emergency contact phone" android:inputType="phone" />
 
-        <TextView style="@style/SectionLabel" android:text="TRAINING" />
+        <LinearLayout android:id="@+id/trainingSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+            <TextView style="@style/SectionLabel" android:text="TRAINING" />
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Class" android:textStyle="bold" android:textSize="13sp" />
-        <RadioGroup android:id="@+id/radioClass" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="12dp">
-            <RadioButton android:id="@+id/radioGirls" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Girls Only" />
-            <RadioButton android:id="@+id/radioKids" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Kids" />
-            <RadioButton android:id="@+id/radioTeensAdults" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Teens &amp; Adults" />
-        </RadioGroup>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Class" android:textStyle="bold" android:textSize="13sp" />
+            <RadioGroup android:id="@+id/radioClass" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="12dp">
+                <RadioButton android:id="@+id/radioGirls" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Girls Only" />
+                <RadioButton android:id="@+id/radioKids" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Kids" />
+                <RadioButton android:id="@+id/radioTeensAdults" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Teens &amp; Adults" />
+            </RadioGroup>
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Payment type" android:textStyle="bold" android:textSize="13sp" />
-        <Spinner android:id="@+id/spinnerPayment" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginBottom="12dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Payment type" android:textStyle="bold" android:textSize="13sp" />
+            <Spinner android:id="@+id/spinnerPayment" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginBottom="12dp" />
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Training experience" android:textStyle="bold" android:textSize="13sp" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
-            <EditText android:id="@+id/editYears" style="@style/FormInput" android:layout_width="0dp" android:layout_weight="1" android:layout_marginEnd="8dp" android:hint="Years" android:inputType="number" android:layout_marginBottom="0dp" />
-            <EditText android:id="@+id/editMonths" style="@style/FormInput" android:layout_width="0dp" android:layout_weight="1" android:hint="Months" android:inputType="number" android:layout_marginBottom="0dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Training experience" android:textStyle="bold" android:textSize="13sp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+                <EditText android:id="@+id/editYears" style="@style/FormInput" android:layout_width="0dp" android:layout_weight="1" android:layout_marginEnd="8dp" android:hint="Years" android:inputType="number" android:layout_marginBottom="0dp" />
+                <EditText android:id="@+id/editMonths" style="@style/FormInput" android:layout_width="0dp" android:layout_weight="1" android:hint="Months" android:inputType="number" android:layout_marginBottom="0dp" />
+            </LinearLayout>
         </LinearLayout>
 
         <TextView style="@style/SectionLabel" android:text="GRADE" />
