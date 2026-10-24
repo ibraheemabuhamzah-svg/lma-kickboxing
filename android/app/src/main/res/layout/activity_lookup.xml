@@ -57,7 +57,9 @@
             android:background="@drawable/bg_input"
             android:hint="e.g. 501234567"
             android:inputType="phone"
-            android:padding="12dp" />
+            android:padding="12dp"
+            android:textColor="@color/ink"
+            android:textColorHint="@color/muted" />
 
         <Button
             android:id="@+id/btnContinue"

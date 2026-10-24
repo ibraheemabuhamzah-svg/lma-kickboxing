@@ -1,5 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.LmaKickboxing" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.LmaKickboxing" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Forced Light (not DayNight): every color in colors.xml is a
+             fixed light-mode value with no dark counterpart, so on a phone
+             in system dark mode, DayNight was swapping in light/white
+             default text color while our input backgrounds stayed
+             hardcoded white — making typed text invisible. -->
+        <item name="android:textColorPrimary">@color/ink</item>
+        <item name="android:textColor">@color/ink</item>
         <item name="colorPrimary">@color/red</item>
         <item name="colorPrimaryDark">@color/black</item>
         <item name="colorAccent">@color/red</item>
