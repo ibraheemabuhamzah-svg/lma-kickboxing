@@ -229,7 +229,7 @@ async function renderStudentsTable() {
       <td>${paymentLabel(m.paymentType)}</td>
       <td>${seniorityText(m)}</td>
       <td>
-        <select class="gradeSelect" data-id="${m.id}">
+        <select class="gradeSelect badge ${m.grade || 'white'}" data-id="${m.id}">
           ${GRADES.map(g => `<option value="${g.key}" ${g.key === m.grade ? 'selected' : ''}>${g.label}</option>`).join('')}
         </select>
       </td>
@@ -242,6 +242,10 @@ async function renderStudentsTable() {
 
   tbody.querySelectorAll('.gradeSelect').forEach(sel => {
     sel.addEventListener('change', async () => {
+      // Recolor immediately so the box reflects the new belt right away,
+      // instead of waiting for the save + re-render round trip.
+      GRADES.forEach(g => sel.classList.remove(g.key));
+      sel.classList.add(sel.value);
       try {
         const member = await getMemberById(sel.dataset.id);
         if (!member) return;

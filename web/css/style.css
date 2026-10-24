@@ -113,15 +113,34 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
   color: #fff;
 }
-.badge.white { background: #9a9a9a; }
-.badge.red { background: #e30613; }
-.badge.yellow { background: #e6b800; color: #3a2e00; }
-.badge.orange { background: #e8791a; }
-.badge.green { background: #2e9e4b; }
-.badge.blue { background: #1565c0; }
-.badge.purple { background: #7b3fa0; }
-.badge.brown { background: #6b4226; }
-.badge.black { background: #111113; }
+.badge.white { background-color: #9a9a9a; }
+.badge.red { background-color: #e30613; }
+.badge.yellow { background-color: #e6b800; color: #3a2e00; }
+.badge.orange { background-color: #e8791a; }
+.badge.green { background-color: #2e9e4b; }
+.badge.blue { background-color: #1565c0; }
+.badge.purple { background-color: #7b3fa0; }
+.badge.brown { background-color: #6b4226; }
+.badge.black { background-color: #111113; }
+
+/* Grade <select> in the Registry's Students table: reuses the .badge
+   color classes above so the box itself shows the belt color, with a
+   CSS-only chevron (no default browser select chrome) tinted to match. */
+select.gradeSelect {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 6px 26px 6px 12px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 14px) center, calc(100% - 9px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
 
 .profile-header { display: flex; align-items: center; gap: 16px; margin-bottom: 4px; }
 .profile-header img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }

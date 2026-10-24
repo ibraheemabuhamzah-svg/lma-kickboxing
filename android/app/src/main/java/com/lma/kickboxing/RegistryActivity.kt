@@ -3,15 +3,21 @@ package com.lma.kickboxing
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Spinner
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.tabs.TabLayout
 import com.lma.kickboxing.databinding.ActivityRegistryBinding
@@ -68,6 +74,26 @@ class RegistryActivity : AppCompatActivity() {
 
     private fun onDataError(e: Exception) {
         Toast.makeText(this, e.message, Toast.LENGTH_LONG).show()
+    }
+
+    // Colors the grade spinner's own box (not the dropdown list) to match
+    // the selected belt, like the badges used elsewhere in the app.
+    private fun applyGradeSpinnerColor(spinner: Spinner, grade: String) {
+        val bg = (ContextCompat.getDrawable(this, R.drawable.bg_badge)?.mutate() as? GradientDrawable) ?: return
+        bg.setColor(ContextCompat.getColor(this, Constants.gradeColorRes(grade)))
+        spinner.background = bg
+        val pad = (12 * resources.displayMetrics.density).toInt()
+        val padV = (6 * resources.displayMetrics.density).toInt()
+        spinner.setPadding(pad, padV, pad, padV)
+    }
+
+    private inner class GradeSpinnerAdapter : ArrayAdapter<String>(this@RegistryActivity, android.R.layout.simple_spinner_dropdown_item, Constants.GRADES.map { it.label }) {
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val view = super.getView(position, convertView, parent) as TextView
+            view.setTextColor(if (Constants.GRADES[position].key == "yellow") Color.parseColor("#3A2E00") else Color.WHITE)
+            view.setTypeface(view.typeface, android.graphics.Typeface.BOLD)
+            return view
+        }
     }
 
     // ---------- TABS ----------
@@ -251,14 +277,16 @@ class RegistryActivity : AppCompatActivity() {
                 "${Constants.classLabel(member.classCategory)} · ${Constants.paymentLabel(member.paymentType)} · " +
                 "${member.trainingYears}y ${member.trainingMonths}m"
 
-            row.spinnerGrade.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, Constants.GRADES.map { it.label })
+            row.spinnerGrade.adapter = GradeSpinnerAdapter()
             val gradeIdx2 = Constants.GRADES.indexOfFirst { it.key == member.grade }.coerceAtLeast(0)
             row.spinnerGrade.setSelection(gradeIdx2)
+            applyGradeSpinnerColor(row.spinnerGrade, member.grade)
             row.spinnerGrade.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                     val newGrade = Constants.GRADES[position].key
                     if (newGrade != member.grade) {
                         member.grade = newGrade
+                        applyGradeSpinnerColor(row.spinnerGrade, newGrade)
                         lifecycleScope.launch {
                             try {
                                 Store.upsertMember(this@RegistryActivity, member)
