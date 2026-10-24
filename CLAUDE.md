@@ -36,7 +36,7 @@ A member can also delete any of their own profiles from the Member Area's profil
 
 ## 2. Registry (Admin Back-Office)
 
-- Protected by a single password: `LmaKickBoxingR` (client-side gate — simple password prompt, checked against a SHA-256 hash rather than a plaintext comparison; this is not meant to be cryptographically secure — there is no per-user auth, so a determined attacker could brute-force the hash offline, or bypass the gate entirely by calling the Supabase API directly with the embedded anon key, same as described under Storage above).
+- Protected by a single password: `2204` (client-side gate — simple password prompt, checked against a SHA-256 hash rather than a plaintext comparison; this is not meant to be cryptographically secure — there is no per-user auth, so a determined attacker could brute-force the hash offline, or bypass the gate entirely by calling the Supabase API directly with the embedded anon key, same as described under Storage above).
 - From the Registry, the admin can:
   - Set/change a member's **grade/belt** (the only profile field the Registry edits directly today).
   - Delete a student's profile (with a confirmation prompt) from the Students tab.

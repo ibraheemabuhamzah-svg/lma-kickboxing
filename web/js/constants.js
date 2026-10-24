@@ -90,7 +90,7 @@ const DIAL_CODES = [
 // plaintext in this publicly-served file. Still only as strong as a
 // client-side check can be (no backend), but closes the trivial
 // "view-source and read the password" path.
-const REGISTRY_PASSWORD_HASH = 'cd67a26f1ae4b7e78a1f1a2c92c770fc11818052c3438ceb2ef761c0b919b9d2';
+const REGISTRY_PASSWORD_HASH = 'dcdc240c9e0c71a200eec8cc118ae8dbd640ae3f79b8d41515d96462bc09bcc7';
 
 async function sha256Hex(text) {
   const bytes = new TextEncoder().encode(text);

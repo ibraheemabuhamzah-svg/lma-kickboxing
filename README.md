@@ -7,4 +7,4 @@ Club management app, built two ways from the same spec (see [CLAUDE.md](CLAUDE.m
 
 ## Registry password
 
-Coach-only back office password: `LmaKickBoxingR`
+Coach-only back office password: `2204`
