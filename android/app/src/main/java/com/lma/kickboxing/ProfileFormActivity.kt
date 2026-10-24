@@ -59,7 +59,7 @@ class ProfileFormActivity : AppCompatActivity() {
     }
 
     private fun setupForNewMember() {
-        val prefix = intent.getStringExtra("prefix") ?: "+971"
+        val prefix = intent.getStringExtra("prefix") ?: "+44"
         val number = intent.getStringExtra("number") ?: ""
         setPrefixSelection(prefix)
         binding.editPhoneNumber.setText(number)
@@ -176,12 +176,6 @@ class ProfileFormActivity : AppCompatActivity() {
         binding.btnSave.isEnabled = false
         lifecycleScope.launch {
             try {
-                val duplicate = Store.getMemberByPhone(this@ProfileFormActivity, prefix, number)
-                if (duplicate != null && duplicate.id != existingMember?.id) {
-                    Toast.makeText(this@ProfileFormActivity, "A profile already exists with this phone number.", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-
                 val member = existingMember ?: Member()
                 member.role = role
                 member.firstName = firstName
@@ -211,7 +205,11 @@ class ProfileFormActivity : AppCompatActivity() {
 
                 Store.upsertMember(this@ProfileFormActivity, member)
                 Toast.makeText(this@ProfileFormActivity, "Profile saved successfully.", Toast.LENGTH_SHORT).show()
-                startActivity(Intent(this@ProfileFormActivity, ViewProfileActivity::class.java).putExtra("memberId", member.id))
+                startActivity(
+                    Intent(this@ProfileFormActivity, ProfilesListActivity::class.java)
+                        .putExtra("prefix", member.phonePrefix)
+                        .putExtra("number", member.phoneNumber)
+                )
                 finish()
             } catch (e: Exception) {
                 Toast.makeText(this@ProfileFormActivity, e.message, Toast.LENGTH_LONG).show()

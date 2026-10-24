@@ -111,9 +111,11 @@ object Store {
     fun normalizePhone(number: String): String =
         number.replace(Regex("[\\s-]"), "").trimStart('0')
 
-    suspend fun getMemberByPhone(ctx: Context, prefix: String, number: String): Member? {
+    // A phone number is a "contact" that can have several linked profiles
+    // (e.g. one parent, several kids), so lookup returns all matches.
+    suspend fun getMembersByContact(ctx: Context, prefix: String, number: String): List<Member> {
         val target = normalizePhone(number)
-        return getMembers(ctx).find { it.phonePrefix == prefix && normalizePhone(it.phoneNumber) == target }
+        return getMembers(ctx).filter { it.phonePrefix == prefix && normalizePhone(it.phoneNumber) == target }
     }
 
     suspend fun getMemberById(ctx: Context, id: String): Member? {

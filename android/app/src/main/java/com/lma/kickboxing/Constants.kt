@@ -58,6 +58,7 @@ object Constants {
     )
 
     val DIAL_CODES = listOf(
+        "+44" to "United Kingdom",
         "+971" to "UAE", "+966" to "Saudi Arabia", "+974" to "Qatar", "+973" to "Bahrain",
         "+965" to "Kuwait", "+968" to "Oman", "+20" to "Egypt", "+962" to "Jordan",
         "+961" to "Lebanon", "+963" to "Syria", "+964" to "Iraq", "+970" to "Palestine",
@@ -65,7 +66,7 @@ object Constants {
         "+880" to "Bangladesh", "+94" to "Sri Lanka", "+63" to "Philippines", "+60" to "Malaysia",
         "+65" to "Singapore", "+62" to "Indonesia", "+66" to "Thailand", "+84" to "Vietnam",
         "+86" to "China", "+852" to "Hong Kong", "+81" to "Japan", "+82" to "South Korea",
-        "+1" to "USA / Canada", "+44" to "United Kingdom", "+33" to "France", "+49" to "Germany",
+        "+1" to "USA / Canada", "+33" to "France", "+49" to "Germany",
         "+39" to "Italy", "+34" to "Spain", "+351" to "Portugal", "+31" to "Netherlands",
         "+32" to "Belgium", "+41" to "Switzerland", "+43" to "Austria", "+46" to "Sweden",
         "+47" to "Norway", "+45" to "Denmark", "+358" to "Finland", "+48" to "Poland",

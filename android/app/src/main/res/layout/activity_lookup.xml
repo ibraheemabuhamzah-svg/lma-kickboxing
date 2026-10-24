@@ -13,7 +13,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Find or create your profile"
+            android:text="Find or create a profile"
             android:textColor="@color/ink"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -23,7 +23,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:layout_marginBottom="20dp"
-            android:text="Enter your personal phone number to load your profile, or create a new one."
+            android:text="Enter your personal phone number. One number can have several profiles linked to it — handy for a parent registering more than one child."
             android:textColor="@color/muted"
             android:textSize="14sp" />
 

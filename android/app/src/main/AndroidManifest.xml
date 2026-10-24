@@ -21,7 +21,7 @@
 
         <activity android:name=".LookupActivity" android:exported="false" />
         <activity android:name=".ProfileFormActivity" android:exported="false" />
-        <activity android:name=".ViewProfileActivity" android:exported="false" />
+        <activity android:name=".ProfilesListActivity" android:exported="false" />
         <activity android:name=".RegistryGateActivity" android:exported="false" />
         <activity android:name=".RegistryActivity" android:exported="false" />
 

@@ -13,12 +13,12 @@ A web application for managing a Muay Thai / Kickboxing club. Members can create
 
 ## 1. Member Profile
 
-Each member can create/edit their own profile. Fields:
+A phone number is a **contact**, not a unique member key: looking it up shows every profile linked to it, and the same contact can have several profiles (e.g. one parent registering multiple children). Each profile has its own fields below. After saving a profile ("Validate"), the member sees the list of profiles under that contact with the choice to create another or go back to the home screen.
 
 | Field | Notes |
 |---|---|
 | Status | Student (default) / Coach / Assistant (Volunteer) — self-selected at profile creation |
-| Phone number | With a country-prefix selector (dial code dropdown) |
+| Phone number | With a country-prefix selector (dial code dropdown, **+44 United Kingdom listed and selected first**) |
 | First name, Last name | |
 | Date of birth | Format dd/mm/yyyy |
 | Gender | Male / Female |
@@ -32,7 +32,7 @@ Each member can create/edit their own profile. Fields:
 
 Member-facing profile form must NOT expose the grade/belt field for editing — it is read-only there (or hidden), and can only be set/changed via the password-protected Registry.
 
-A member can also delete their own profile from the Member Area (with a confirmation prompt) — this permanently removes their record from local storage.
+A member can also delete any of their own profiles from the Member Area's profile list (with a confirmation prompt) — this permanently removes that record from the shared database.
 
 ## 2. Registry (Admin Back-Office)
 

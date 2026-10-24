@@ -20,7 +20,7 @@ class LookupActivity : AppCompatActivity() {
 
         val prefixLabels = Constants.DIAL_CODES.map { "${it.first} ${it.second}" }
         binding.spinnerPrefix.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, prefixLabels)
-        val defaultIdx = Constants.DIAL_CODES.indexOfFirst { it.first == "+971" }
+        val defaultIdx = Constants.DIAL_CODES.indexOfFirst { it.first == "+44" }
         if (defaultIdx >= 0) binding.spinnerPrefix.setSelection(defaultIdx)
 
         binding.btnContinue.setOnClickListener {
@@ -33,9 +33,13 @@ class LookupActivity : AppCompatActivity() {
             binding.btnContinue.isEnabled = false
             lifecycleScope.launch {
                 try {
-                    val member = Store.getMemberByPhone(this@LookupActivity, prefix, number)
-                    if (member != null) {
-                        startActivity(Intent(this@LookupActivity, ViewProfileActivity::class.java).putExtra("memberId", member.id))
+                    val members = Store.getMembersByContact(this@LookupActivity, prefix, number)
+                    if (members.isNotEmpty()) {
+                        startActivity(
+                            Intent(this@LookupActivity, ProfilesListActivity::class.java)
+                                .putExtra("prefix", prefix)
+                                .putExtra("number", number)
+                        )
                     } else {
                         startActivity(
                             Intent(this@LookupActivity, ProfileFormActivity::class.java)
