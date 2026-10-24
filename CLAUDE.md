@@ -24,11 +24,13 @@ A phone number is a **contact**, not a unique member key: looking it up shows ev
 | Gender | Male / Female |
 | WhatsApp number | |
 | Emergency contact | Phone number **and** contact person's name |
-| Class | Girls Only / Kids / Teens & Adults |
-| Payment type | Pay as you go / Monthly membership / Transfer / Free |
+| Class | Girls Only / Kids / Teens & Adults — **coaches don't have one** (hidden on the form when Status = Coach) |
+| Payment type | Pay as you go / Monthly membership / Transfer / Free — **coaches don't have one** |
 | Selfie photo | Optional (stored as base64 text in the shared database) |
-| Training experience | Number of years + number of months |
-| **Grade/Belt** | White, Red, Yellow, Orange, Green, Blue, Purple, Brown, Black belt — **editable only from the admin Registry, never by the member themselves** |
+| Training experience | Number of years + number of months — **coaches don't have one** |
+| **Grade/Belt** | White, Red, Yellow, Orange, Green, Blue, Purple, Brown, Black belt — **editable only from the admin Registry, never by the member themselves**. Coaches do have a grade. |
+
+Class / Payment type / Training experience apply to students and assistants, not coaches (a coach isn't attending a class or paying to train) — the form hides that whole section when Status = Coach, and the Registry shows "-" for those fields on a coach's row/detail.
 
 Member-facing profile form must NOT expose the grade/belt field for editing — it is read-only there (or hidden), and can only be set/changed via the password-protected Registry.
 
@@ -40,22 +42,23 @@ A member can also delete any of their own profiles from the Member Area's profil
 - From the Registry, the admin can:
   - Set/change a member's **grade/belt** (the only profile field the Registry edits directly today).
   - Delete a student's profile (with a confirmation prompt) from the Students tab.
-  - Enter the day's revenue after each class (date, class/session, amount, optional note).
+  - Enter the day's revenue after each class (date, class/session, amount, optional note) — the class/session dropdown pre-selects to whatever is scheduled on the chosen date.
   - View dashboards/statistics (see below).
 
 ### Registry statistics & dashboards
 
-1. **Student counts**, broken down by:
+1. **Student counts**, broken down by, with a "Breakdown for: [class]" filter to slice any of the four by one class:
    - Age (computed from date of birth, grouped into bands)
-   - Seniority / time training (years + months grouped into bands)
-   - Payment type (Pay as you go / Monthly membership / Transfer / Free)
-   - Grade/belt
+   - Seniority / time training (years + months grouped into bands) — excludes coaches
+   - Payment type (Pay as you go / Monthly membership / Transfer / Free) — excludes coaches
+   - Grade/belt — rendered as a colored square per belt (no text label) instead of bars with "White Belt"/"Red Belt" etc.
 2. **Trends over time** (clear charts):
    - Evolution of the above counts over time
-   - Monthly revenue evolution (month by month)
+   - Monthly revenue evolution (month by month) and weekly revenue evolution (week by week)
 3. **Class-by-class, week-by-week evolution**:
    - Number of students per class, week over week
    - Revenue per class, week over week
+4. **Dashboard stat tiles**: Total Students, Revenue This Month, Revenue This Week, Total Revenue, Sessions Logged, Avg Monthly Revenue, Avg Weekly Revenue. The first five are tappable — tapping one opens a detail panel (e.g. the list of this month's sessions, or the student breakdown by status/class).
 
 ## 3. Weekly Class Schedule
 

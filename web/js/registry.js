@@ -94,6 +94,41 @@ function renderBarChart(canvasId, labels, data, label) {
   });
 }
 
+// Grade chart: colored squares instead of "White Belt" / "Red Belt" text —
+// the bar (and the square under it) already carries the belt color.
+function renderGradeChart(canvasId, members) {
+  destroyChart(canvasId);
+  const gradeCounts = {};
+  GRADES.forEach(g => gradeCounts[g.key] = 0);
+  members.forEach(m => { gradeCounts[m.grade] = (gradeCounts[m.grade] || 0) + 1; });
+  const keys = GRADES.map(g => g.key);
+  const data = keys.map(k => gradeCounts[k] || 0);
+  const colors = keys.map(k => GRADE_COLORS[k]);
+
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: keys.map(() => ''), datasets: [{ data, backgroundColor: colors }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { bottom: 22 } },
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { display: false } }, y: { beginAtZero: true } },
+    },
+    plugins: [{
+      id: 'gradeColorSquares',
+      afterDraw(chart) {
+        const meta = chart.getDatasetMeta(0);
+        const bottom = chart.scales.x.bottom;
+        meta.data.forEach((bar, i) => {
+          chart.ctx.fillStyle = colors[i];
+          chart.ctx.fillRect(bar.x - 7, bottom + 8, 14, 14);
+        });
+      },
+    }],
+  });
+}
+
 function renderPieChart(canvasId, labels, data) {
   destroyChart(canvasId);
   const ctx = document.getElementById(canvasId).getContext('2d');
@@ -125,21 +160,45 @@ function countBy(items, keyFn) {
 
 // ---------- DASHBOARD ----------
 
+let lastDashboardMembers = [];
+let lastDashboardRevenue = [];
+
 async function renderDashboard() {
   const [members, revenue] = await Promise.all([getMembers(), getRevenueEntries()]);
+  lastDashboardMembers = members;
+  lastDashboardRevenue = revenue;
 
   const thisMonth = monthKey(todayIso());
+  const thisWeek = weekKey(todayIso());
   const monthRevenue = revenue.filter(r => monthKey(r.date) === thisMonth).reduce((s, r) => s + Number(r.amount || 0), 0);
+  const weekRevenue = revenue.filter(r => weekKey(r.date) === thisWeek).reduce((s, r) => s + Number(r.amount || 0), 0);
   const totalRevenue = revenue.reduce((s, r) => s + Number(r.amount || 0), 0);
 
-  document.getElementById('statTiles').innerHTML = [
-    { num: members.length, label: 'Total Students' },
-    { num: `${monthRevenue.toFixed(0)}`, label: 'Revenue This Month' },
-    { num: `${totalRevenue.toFixed(0)}`, label: 'Total Revenue' },
-    { num: revenue.length, label: 'Sessions Logged' },
-  ].map(t => `<div class="stat-tile"><div class="num">${t.num}</div><div class="label">${t.label}</div></div>`).join('');
+  const monthsWithRevenue = new Set(revenue.map(r => monthKey(r.date)).filter(Boolean));
+  const weeksWithRevenue = new Set(revenue.map(r => weekKey(r.date)).filter(Boolean));
+  const avgMonthlyRevenue = monthsWithRevenue.size ? totalRevenue / monthsWithRevenue.size : 0;
+  const avgWeeklyRevenue = weeksWithRevenue.size ? totalRevenue / weeksWithRevenue.size : 0;
 
-  // Monthly revenue evolution (last 12 months, chronological)
+  const tiles = [
+    { num: members.length, label: 'Total Students', action: 'students' },
+    { num: monthRevenue.toFixed(0), label: 'Revenue This Month', action: 'revenueMonth' },
+    { num: weekRevenue.toFixed(0), label: 'Revenue This Week', action: 'revenueWeek' },
+    { num: totalRevenue.toFixed(0), label: 'Total Revenue', action: 'revenueTotal' },
+    { num: revenue.length, label: 'Sessions Logged', action: 'sessions' },
+    { num: avgMonthlyRevenue.toFixed(0), label: 'Avg Monthly Revenue' },
+    { num: avgWeeklyRevenue.toFixed(0), label: 'Avg Weekly Revenue' },
+  ];
+  document.getElementById('statTiles').innerHTML = tiles.map(t =>
+    `<div class="stat-tile${t.action ? ' tappable' : ''}" ${t.action ? `data-action="${t.action}"` : ''}>
+      <div class="num">${t.num}</div><div class="label">${t.label}</div>
+    </div>`
+  ).join('');
+  document.querySelectorAll('#statTiles .stat-tile[data-action]').forEach(tile => {
+    tile.addEventListener('click', () => showStatDetail(tile.dataset.action));
+  });
+  document.getElementById('statDetail').style.display = 'none';
+
+  // Monthly revenue evolution (chronological)
   const monthMap = {};
   revenue.forEach(r => {
     const k = monthKey(r.date);
@@ -152,37 +211,121 @@ async function renderDashboard() {
     borderColor: '#e30613', backgroundColor: 'rgba(227,6,19,0.12)', fill: true,
   }]);
 
-  // Age distribution
+  // Weekly revenue evolution (chronological)
+  const weekMap = {};
+  revenue.forEach(r => {
+    const k = weekKey(r.date);
+    if (!k) return;
+    weekMap[k] = (weekMap[k] || 0) + Number(r.amount || 0);
+  });
+  const weeks = Object.keys(weekMap).sort();
+  renderLineChart('chartWeeklyRevenue', weeks, [{
+    label: 'Revenue', data: weeks.map(w => weekMap[w]),
+    borderColor: '#2e9e4b', backgroundColor: 'rgba(46,158,75,0.12)', fill: true,
+  }]);
+
+  renderBreakdownCharts(members);
+}
+
+// Age/Seniority/Payment/Grade charts, optionally sliced to one class via the
+// "Breakdown for" filter. Coaches don't have a class/payment-type/seniority,
+// so they're excluded from those two charts (but still counted in Age/Grade).
+function renderBreakdownCharts(members) {
+  const classFilter = document.getElementById('dashboardClassFilter').value;
+  const inClass = classFilter ? members.filter(m => m.class === classFilter) : members;
+  const nonCoach = inClass.filter(m => m.role !== 'coach');
+
   const ageCounts = {};
   AGE_BANDS.forEach(b => ageCounts[b.label] = 0);
-  members.forEach(m => {
+  inClass.forEach(m => {
     const age = ageFromDob(m.dob);
     if (age === null) return;
     ageCounts[bandFor(AGE_BANDS, age)] = (ageCounts[bandFor(AGE_BANDS, age)] || 0) + 1;
   });
   renderBarChart('chartAge', Object.keys(ageCounts), Object.values(ageCounts), 'Students');
 
-  // Seniority distribution
   const senCounts = {};
   SENIORITY_BANDS.forEach(b => senCounts[b.label] = 0);
-  members.forEach(m => {
+  nonCoach.forEach(m => {
     const months_ = seniorityInMonths(m);
     senCounts[bandFor(SENIORITY_BANDS, months_)] = (senCounts[bandFor(SENIORITY_BANDS, months_)] || 0) + 1;
   });
   renderBarChart('chartSeniority', Object.keys(senCounts), Object.values(senCounts), 'Students');
 
-  // Payment type distribution
-  const payCounts = countBy(members, m => paymentLabel(m.paymentType));
+  const payCounts = countBy(nonCoach, m => paymentLabel(m.paymentType));
   renderPieChart('chartPayment', Object.keys(payCounts), Object.values(payCounts));
 
-  // Grade distribution
-  const gradeCounts = {};
-  GRADES.forEach(g => gradeCounts[g.label] = 0);
-  members.forEach(m => { gradeCounts[gradeLabel(m.grade)] = (gradeCounts[gradeLabel(m.grade)] || 0) + 1; });
-  renderBarChart('chartGrade', Object.keys(gradeCounts), Object.values(gradeCounts), 'Students');
+  renderGradeChart('chartGrade', inClass);
+}
+
+function renderEntriesTable(entries) {
+  if (!entries.length) return `<p class="hint">No entries.</p>`;
+  const total = entries.reduce((s, e) => s + Number(e.amount || 0), 0);
+  return `
+    <p class="hint">${entries.length} session(s) · total ${total.toFixed(2)}</p>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Date</th><th>Session</th><th>Amount</th></tr></thead>
+      <tbody>${entries.map(e => `<tr><td>${e.date}</td><td>${scheduleLabel(e.classKey)}</td><td>${Number(e.amount).toFixed(2)}</td></tr>`).join('')}</tbody>
+    </table></div>
+  `;
+}
+
+function showStatDetail(action) {
+  const members = lastDashboardMembers;
+  const revenue = lastDashboardRevenue;
+  let title = '';
+  let body = '';
+
+  if (action === 'students') {
+    const byRole = countBy(members, m => roleLabel(m.role));
+    const byClass = countBy(members.filter(m => m.role !== 'coach'), m => classLabel(m.class));
+    title = 'Total Students';
+    body = `
+      <p class="hint">By status</p>
+      <div class="pill-row">${Object.entries(byRole).map(([k, v]) => `<span class="badge" style="background:#eceef1;color:#444">${k}: ${v}</span>`).join('')}</div>
+      <p class="hint" style="margin-top:14px">By class (students &amp; assistants)</p>
+      <div class="pill-row">${Object.entries(byClass).map(([k, v]) => `<span class="badge" style="background:#eceef1;color:#444">${k}: ${v}</span>`).join('')}</div>
+    `;
+  } else if (action === 'revenueMonth' || action === 'revenueWeek') {
+    const key = action === 'revenueMonth' ? monthKey(todayIso()) : weekKey(todayIso());
+    const keyFn = action === 'revenueMonth' ? (r => monthKey(r.date)) : (r => weekKey(r.date));
+    const entries = revenue.filter(r => keyFn(r) === key).sort((a, b) => (a.date < b.date ? 1 : -1));
+    title = action === 'revenueMonth' ? 'Revenue This Month' : 'Revenue This Week';
+    body = renderEntriesTable(entries);
+  } else if (action === 'revenueTotal') {
+    const byMonth = {};
+    revenue.forEach(r => {
+      const k = monthKey(r.date);
+      if (!k) return;
+      byMonth[k] = (byMonth[k] || 0) + Number(r.amount || 0);
+    });
+    const monthsSorted = Object.keys(byMonth).sort().reverse();
+    const total = revenue.reduce((s, r) => s + Number(r.amount || 0), 0);
+    title = 'Total Revenue';
+    body = `
+      <p class="hint">${revenue.length} session(s) · total ${total.toFixed(2)}</p>
+      <table><thead><tr><th>Month</th><th>Revenue</th></tr></thead><tbody>
+        ${monthsSorted.map(m => `<tr><td>${m}</td><td>${byMonth[m].toFixed(2)}</td></tr>`).join('')}
+      </tbody></table>
+    `;
+  } else if (action === 'sessions') {
+    const entries = [...revenue].sort((a, b) => (a.date < b.date ? 1 : -1));
+    title = 'Sessions Logged';
+    body = renderEntriesTable(entries);
+  }
+
+  const panel = document.getElementById('statDetail');
+  panel.innerHTML = `<h2>${title}</h2>${body}<div class="actions"><button class="ghost" id="closeStatDetailBtn">Close</button></div>`;
+  panel.style.display = '';
+  document.getElementById('closeStatDetailBtn').addEventListener('click', () => { panel.style.display = 'none'; });
 }
 
 // ---------- STUDENTS ----------
+
+function renderDashboardClassFilter() {
+  document.getElementById('dashboardClassFilter').innerHTML = '<option value="">All classes</option>' +
+    CLASSES.map(c => `<option value="${c.key}">${c.label}</option>`).join('');
+}
 
 function renderStudentsFilters() {
   document.getElementById('filterRole').innerHTML = '<option value="">All statuses</option>' +
@@ -225,9 +368,9 @@ async function renderStudentsTable() {
       <td>${m.phonePrefix} ${escapeHtml(m.phoneNumber)}</td>
       <td>${roleLabel(m.role)}</td>
       <td>${ageFromDob(m.dob) ?? '-'}</td>
-      <td>${classLabel(m.class)}</td>
-      <td>${paymentLabel(m.paymentType)}</td>
-      <td>${seniorityText(m)}</td>
+      <td>${m.role === 'coach' ? '-' : classLabel(m.class)}</td>
+      <td>${m.role === 'coach' ? '-' : paymentLabel(m.paymentType)}</td>
+      <td>${m.role === 'coach' ? '-' : seniorityText(m)}</td>
       <td>
         <select class="gradeSelect badge ${m.grade || 'white'}" data-id="${m.id}">
           ${GRADES.map(g => `<option value="${g.key}" ${g.key === m.grade ? 'selected' : ''}>${g.label}</option>`).join('')}
@@ -298,9 +441,10 @@ async function renderStudentDetail(id) {
       <div><strong>Status:</strong> ${roleLabel(m.role)}</div>
       <div><strong>WhatsApp:</strong> ${escapeHtml(m.whatsapp) || '-'}</div>
       <div><strong>Emergency contact:</strong> ${escapeHtml(m.emergencyName) || '-'} (${escapeHtml(m.emergencyPhone) || '-'})</div>
+      ${m.role === 'coach' ? '' : `
       <div><strong>Class:</strong> ${classLabel(m.class)}</div>
       <div><strong>Payment type:</strong> ${paymentLabel(m.paymentType)}</div>
-      <div><strong>Training experience:</strong> ${seniorityText(m)}</div>
+      <div><strong>Training experience:</strong> ${seniorityText(m)}</div>`}
       <div><strong>Member since:</strong> ${m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '-'}</div>
     </div>
     <div class="actions"><button class="ghost" id="closeDetailBtn">Close</button></div>
@@ -427,13 +571,27 @@ async function tryUnlock() {
 
 // ---------- INIT ----------
 
+// Pre-selects the class/session dropdown to match whatever is scheduled on
+// the chosen day (e.g. picking a Wednesday selects Girls Only, the first
+// Wednesday session) — the coach can still change it if there's more than
+// one session that day.
+function autoSelectClassForDate(dateStr) {
+  if (!dateStr) return;
+  const dayIndex = new Date(`${dateStr}T00:00:00`).getDay();
+  const match = SCHEDULE.find(s => s.dayIndex === dayIndex);
+  if (match) document.getElementById('revClass').value = match.key;
+}
+
 async function initRegistry() {
   initTabs();
   renderStudentsFilters();
+  renderDashboardClassFilter();
   renderRevenueClassOptions();
   renderScheduleTable();
 
   document.getElementById('revDate').value = todayIso();
+  autoSelectClassForDate(todayIso());
+  document.getElementById('revDate').addEventListener('change', (e) => autoSelectClassForDate(e.target.value));
 
   try {
     await Promise.all([renderDashboard(), renderStudentsTable(), renderRevenueTable(), renderTrends()]);
@@ -452,6 +610,8 @@ async function initRegistry() {
 
   document.getElementById('trendClass').addEventListener('change', safe(renderTrends));
 
+  document.getElementById('dashboardClassFilter').addEventListener('change', () => renderBreakdownCharts(lastDashboardMembers));
+
   document.getElementById('revenueForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = e.target.querySelector('button[type=submit]');
@@ -466,6 +626,7 @@ async function initRegistry() {
       });
       document.getElementById('revenueForm').reset();
       document.getElementById('revDate').value = todayIso();
+      autoSelectClassForDate(todayIso());
       await Promise.all([renderRevenueTable(), renderDashboard(), renderTrends()]);
     } catch (err) {
       alert(err.message);

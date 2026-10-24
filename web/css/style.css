@@ -165,6 +165,9 @@ tr:hover td { background: #fafafb; }
 .stat-tile { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
 .stat-tile .num { font-size: 26px; font-weight: 800; }
 .stat-tile .label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stat-tile.tappable { cursor: pointer; transition: border-color 0.15s, transform 0.1s; }
+.stat-tile.tappable:hover { border-color: var(--red); }
+.stat-tile.tappable:active { transform: scale(0.98); }
 
 .chart-wrap { position: relative; height: 280px; margin-top: 8px; }
 .chart-wrap.tall { height: 340px; }

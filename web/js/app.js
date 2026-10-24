@@ -43,10 +43,15 @@ async function renderProfilesList(prefix, number) {
       <span class="badge ${m.grade || 'white'}">${gradeLabel(m.grade)}</span>
     </div>
     <div class="pill-row" style="margin-bottom:10px;">
-      ${[roleLabel(m.role), classLabel(m.class), paymentLabel(m.paymentType),
-         m.gender === 'female' ? 'Female' : 'Male',
-         `${m.trainingYears || 0}y ${m.trainingMonths || 0}m training`]
-        .map(t => `<span class="badge" style="background:#eceef1;color:#444">${t}</span>`).join('')}
+      ${[
+        roleLabel(m.role),
+        ...(m.role === 'coach' ? [] : [
+          classLabel(m.class),
+          paymentLabel(m.paymentType),
+          `${m.trainingYears || 0}y ${m.trainingMonths || 0}m training`,
+        ]),
+        m.gender === 'female' ? 'Female' : 'Male',
+      ].map(t => `<span class="badge" style="background:#eceef1;color:#444">${t}</span>`).join('')}
     </div>
     <div class="actions" style="margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid var(--line);">
       <button class="secondary editProfileBtn" data-id="${m.id}">Edit</button>
@@ -83,6 +88,15 @@ async function renderProfilesList(prefix, number) {
   showScreen('list');
 }
 
+// Coaches don't have a class, payment type or training-seniority — those
+// fields only make sense for students/assistants attending a class.
+function updateTrainingVisibility() {
+  const role = document.querySelector('input[name=role]:checked');
+  const isCoach = role && role.value === 'coach';
+  document.getElementById('trainingSection').style.display = isCoach ? 'none' : '';
+  document.querySelectorAll('input[name=classKey]').forEach(el => { el.required = !isCoach; });
+}
+
 function resetForm() {
   document.getElementById('profileForm').reset();
   selfieData = null;
@@ -91,6 +105,7 @@ function resetForm() {
   document.getElementById('formGradeBadge').className = 'badge white';
   const defaultRole = document.querySelector('input[name=role][value=student]');
   if (defaultRole) defaultRole.checked = true;
+  updateTrainingVisibility();
 }
 
 function fillFormFromMember(member) {
@@ -98,6 +113,7 @@ function fillFormFromMember(member) {
   document.getElementById('formTitle').textContent = 'Edit profile';
   const r = document.querySelector(`input[name=role][value=${member.role || 'student'}]`);
   if (r) r.checked = true;
+  updateTrainingVisibility();
   document.getElementById('firstName').value = member.firstName || '';
   document.getElementById('lastName').value = member.lastName || '';
   document.getElementById('dob').value = member.dob || '';
@@ -149,6 +165,10 @@ function init() {
   document.getElementById('roleGroup').innerHTML = ROLES.map(r =>
     `<label><input type="radio" name="role" value="${r.key}" ${r.key === 'student' ? 'checked' : ''} /> ${r.label}</label>`
   ).join('');
+  document.querySelectorAll('input[name=role]').forEach(el => {
+    el.addEventListener('change', updateTrainingVisibility);
+  });
+  updateTrainingVisibility();
 
   document.getElementById('selfiePreview').src = PLACEHOLDER_AVATAR;
 
@@ -213,6 +233,7 @@ function init() {
     const gender = document.querySelector('input[name=gender]:checked');
     const classKey = document.querySelector('input[name=classKey]:checked');
     const role = document.querySelector('input[name=role]:checked');
+    const isCoach = (role ? role.value : 'student') === 'coach';
     const member = {
       id: currentMember ? currentMember.id : undefined,
       role: role ? role.value : 'student',
@@ -225,10 +246,13 @@ function init() {
       whatsapp: document.getElementById('whatsapp').value.trim(),
       emergencyName: document.getElementById('emergencyName').value.trim(),
       emergencyPhone: document.getElementById('emergencyPhone').value.trim(),
-      class: classKey ? classKey.value : '',
-      paymentType: document.getElementById('paymentType').value,
-      trainingYears: parseInt(document.getElementById('trainingYears').value, 10) || 0,
-      trainingMonths: parseInt(document.getElementById('trainingMonths').value, 10) || 0,
+      // Coaches don't have a class, payment type or training-seniority —
+      // save these as empty/zero rather than whatever the hidden fields
+      // still happen to hold.
+      class: isCoach ? '' : (classKey ? classKey.value : ''),
+      paymentType: isCoach ? '' : document.getElementById('paymentType').value,
+      trainingYears: isCoach ? 0 : parseInt(document.getElementById('trainingYears').value, 10) || 0,
+      trainingMonths: isCoach ? 0 : parseInt(document.getElementById('trainingMonths').value, 10) || 0,
       selfie: selfieData,
       // grade is intentionally omitted: it's Registry-only, and upsertMember's
       // merge preserves whatever grade is already stored (or defaults new

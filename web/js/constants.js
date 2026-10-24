@@ -8,6 +8,14 @@
 const SUPABASE_URL = 'https://oaxeeljelnpobzxzfsrh.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9heGVlbGplbG5wb2J6eHpmc3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3MDY2NzIsImV4cCI6MjEwODI4MjY3Mn0.SWq5rPQNuPmWWhDkHNKwNLCRgvZcYwP3cumNRVl_CLs';
 
+// Matches the .badge.<grade> colors in style.css and Android's
+// Constants.gradeColorRes, kept here too so JS code (chart rendering) can
+// use the same hex values without parsing CSS.
+const GRADE_COLORS = {
+  white: '#9a9a9a', red: '#e30613', yellow: '#e6b800', orange: '#e8791a',
+  green: '#2e9e4b', blue: '#1565c0', purple: '#7b3fa0', brown: '#6b4226', black: '#111113',
+};
+
 const GRADES = [
   { key: 'white', label: 'White Belt' },
   { key: 'red', label: 'Red Belt' },
