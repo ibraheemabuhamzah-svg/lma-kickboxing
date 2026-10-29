@@ -33,9 +33,14 @@
         <EditText android:id="@+id/editLastName" style="@style/FormInput" android:hint="Last name" />
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Date of birth" android:textStyle="bold" android:textSize="13sp" android:layout_marginTop="8dp" />
-        <Button android:id="@+id/btnDob" style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="match_parent" android:layout_height="48dp"
-            android:text="Select date" android:textAllCaps="false" android:layout_marginBottom="12dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+            <EditText android:id="@+id/editDob" style="@style/FormInput" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_marginBottom="0dp" android:layout_marginEnd="8dp" android:hint="dd/mm/yyyy"
+                android:inputType="number" android:maxLength="10" />
+            <Button android:id="@+id/btnDob" style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content" android:layout_height="48dp"
+                android:text="Calendar" android:textAllCaps="false" />
+        </LinearLayout>
 
         <RadioGroup android:id="@+id/radioGender" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:orientation="horizontal" android:layout_marginBottom="16dp">

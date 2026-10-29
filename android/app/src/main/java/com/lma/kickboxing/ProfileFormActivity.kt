@@ -7,6 +7,8 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Base64
 import android.widget.ArrayAdapter
 import android.widget.Toast
@@ -39,6 +41,7 @@ class ProfileFormActivity : AppCompatActivity() {
         binding.spinnerPayment.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, Constants.PAYMENT_TYPES.map { it.label })
 
         binding.btnDob.setOnClickListener { showDatePicker() }
+        setupDobInput()
         binding.btnPickSelfie.setOnClickListener { pickImage.launch("image/*") }
         binding.btnSave.setOnClickListener { save() }
         binding.radioRole.setOnCheckedChangeListener { _, _ -> updateTrainingVisibility() }
@@ -90,7 +93,7 @@ class ProfileFormActivity : AppCompatActivity() {
         binding.editFirstName.setText(m.firstName)
         binding.editLastName.setText(m.lastName)
         dobIso = m.dob
-        if (m.dob.isNotEmpty()) binding.btnDob.text = isoToDisplay(m.dob)
+        if (m.dob.isNotEmpty()) binding.editDob.setText(isoToDisplay(m.dob))
         if (m.gender == "female") binding.radioFemale.isChecked = true else if (m.gender == "male") binding.radioMale.isChecked = true
         setPrefixSelection(m.phonePrefix)
         binding.editPhoneNumber.setText(m.phoneNumber)
@@ -123,6 +126,43 @@ class ProfileFormActivity : AppCompatActivity() {
 
     private fun resolveColor(resId: Int) = androidx.core.content.ContextCompat.getColor(this, resId)
 
+    // Lets members type their date of birth directly (dd/mm/yyyy) instead of
+    // only through the calendar picker, which is slow to navigate decades
+    // back for an adult's birth year. Auto-inserts the "/" separators as
+    // digits are typed.
+    private fun setupDobInput() {
+        binding.editDob.addTextChangedListener(object : TextWatcher {
+            private var isFormatting = false
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (isFormatting || s == null) return
+                isFormatting = true
+                val digits = s.toString().filter { it.isDigit() }.take(8)
+                val formatted = buildString {
+                    digits.forEachIndexed { i, c ->
+                        append(c)
+                        if ((i == 1 || i == 3) && i != digits.length - 1) append('/')
+                    }
+                }
+                if (formatted != s.toString()) {
+                    binding.editDob.setText(formatted)
+                    binding.editDob.setSelection(formatted.length)
+                }
+                isFormatting = false
+
+                dobIso = if (digits.length == 8) {
+                    val day = digits.substring(0, 2).toIntOrNull()
+                    val month = digits.substring(2, 4).toIntOrNull()
+                    val year = digits.substring(4, 8).toIntOrNull()
+                    if (day != null && month != null && year != null && day in 1..31 && month in 1..12 && year in 1900..2100) {
+                        "%04d-%02d-%02d".format(year, month, day)
+                    } else ""
+                } else ""
+            }
+        })
+    }
+
     private fun showDatePicker() {
         val cal = Calendar.getInstance()
         if (dobIso.isNotEmpty()) {
@@ -131,10 +171,20 @@ class ProfileFormActivity : AppCompatActivity() {
         } else {
             cal.add(Calendar.YEAR, -20)
         }
-        DatePickerDialog(this, { _, year, month, day ->
+        val dialog = DatePickerDialog(this, { _, year, month, day ->
             dobIso = "%04d-%02d-%02d".format(year, month + 1, day)
-            binding.btnDob.text = isoToDisplay(dobIso)
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+            binding.editDob.setText(isoToDisplay(dobIso))
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH))
+        // Best-effort: show day/month/year as scrollable spinners so the
+        // year can be dialed in directly instead of paging through the
+        // calendar grid month by month. Some theme/OEM combinations refuse
+        // this switch at runtime, so it's wrapped and just falls back to
+        // whatever the system shows by default.
+        try {
+            dialog.datePicker.calendarViewShown = false
+            dialog.datePicker.spinnersShown = true
+        } catch (e: Exception) { /* fall back to the system default picker */ }
+        dialog.show()
     }
 
     private fun isoToDisplay(iso: String): String {
