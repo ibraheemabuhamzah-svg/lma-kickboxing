@@ -454,6 +454,12 @@ async function renderStudentDetail(id) {
 
 // ---------- REVENUE ENTRY ----------
 
+// The entry currently loaded into the form, if the chosen date & class
+// already has one logged — editing it (e.g. ticking a late arrival) then
+// corrects that same row instead of creating a duplicate. null means the
+// form is building a brand new entry.
+let currentRevenueEntry = null;
+
 function renderRevenueClassOptions() {
   document.getElementById('revClass').innerHTML = SCHEDULE.map(s =>
     `<option value="${s.key}">${s.day} ${s.time} — ${s.label}</option>`
@@ -468,6 +474,59 @@ function scheduleLabel(key) {
   return s ? `${s.day} ${s.time} — ${s.label}` : key;
 }
 
+function classCategoryForScheduleKey(key) {
+  const s = SCHEDULE.find(s => s.key === key);
+  return s ? s.classKey : '';
+}
+
+function updateAttendanceCount() {
+  const count = document.querySelectorAll('#attendanceList input[type=checkbox]:checked').length;
+  document.getElementById('revCount').value = count;
+}
+
+// Students eligible for the selected class (coaches don't attend as
+// students, so they're excluded), with whoever is already marked present
+// pre-ticked.
+async function renderAttendanceList(classCategory, presentIds) {
+  const list = document.getElementById('attendanceList');
+  const members = (await getMembers())
+    .filter(m => m.role !== 'coach' && m.class === classCategory)
+    .sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
+  list.innerHTML = members.map(m => `
+    <label>
+      <input type="checkbox" value="${m.id}" data-name="${escapeHtml(`${m.firstName} ${m.lastName}`.toLowerCase())}" ${presentIds.includes(m.id) ? 'checked' : ''} />
+      ${escapeHtml(m.firstName)} ${escapeHtml(m.lastName)}
+    </label>
+  `).join('') || `<p class="hint">No students in this class yet.</p>`;
+  list.querySelectorAll('input[type=checkbox]').forEach(cb => cb.addEventListener('change', updateAttendanceCount));
+  updateAttendanceCount();
+}
+
+// Looks up whether the chosen date & class already has a logged entry and
+// loads it into the form for editing (amount, note, who was ticked present)
+// instead of starting blank — this is what makes the log editable at any
+// time, e.g. to tick a student who arrived late.
+async function loadRevenueEntryForDateClass() {
+  const date = document.getElementById('revDate').value;
+  const classKey = document.getElementById('revClass').value;
+  if (!date || !classKey) return;
+  const classCategory = classCategoryForScheduleKey(classKey);
+  let existing = null;
+  try {
+    existing = await getRevenueEntryByDateAndClass(date, classKey);
+  } catch (err) {
+    alert(err.message);
+  }
+  currentRevenueEntry = existing;
+  document.getElementById('revAmount').value = existing ? existing.amount : '';
+  document.getElementById('revNote').value = existing ? existing.note : '';
+  await renderAttendanceList(classCategory, existing ? existing.attendeeIds : []);
+  document.getElementById('revenueSubmitBtn').textContent = existing ? 'Update entry' : 'Save entry';
+  document.getElementById('revenueFormHint').textContent = existing
+    ? 'Editing the entry already logged for this date & class — tick a late arrival or fix the amount any time.'
+    : "After each class, tick who showed up and enter how much money you collected. Do this once per class, right after it ends, so weekly trends stay accurate.";
+}
+
 async function renderRevenueTable() {
   const entries = [...(await getRevenueEntries())].sort((a, b) => (a.date < b.date ? 1 : -1));
   const tbody = document.querySelector('#revenueTable tbody');
@@ -478,15 +537,30 @@ async function renderRevenueTable() {
       <td>${e.studentCount ?? '-'}</td>
       <td>${Number(e.amount).toFixed(2)}</td>
       <td>${escapeHtml(e.note)}</td>
-      <td><button class="ghost delRevBtn" data-id="${e.id}">Delete</button></td>
+      <td>
+        <button class="ghost editRevBtn" data-date="${e.date}" data-class="${e.classKey}">Edit</button>
+        <button class="ghost delRevBtn" data-id="${e.id}">Delete</button>
+      </td>
     </tr>
   `).join('') || `<tr><td colspan="6" class="hint">No entries yet.</td></tr>`;
+
+  tbody.querySelectorAll('.editRevBtn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      document.getElementById('revDate').value = btn.dataset.date;
+      document.getElementById('revClass').value = btn.dataset.class;
+      await loadRevenueEntryForDateClass();
+      document.getElementById('revenueForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
 
   tbody.querySelectorAll('.delRevBtn').forEach(btn => {
     btn.addEventListener('click', async () => {
       try {
         await deleteRevenueEntry(btn.dataset.id);
         await Promise.all([renderRevenueTable(), renderDashboard(), renderTrends()]);
+        // In case the deleted row was the one loaded into the form, drop
+        // back to "new entry" mode instead of still offering to "update" it.
+        await loadRevenueEntryForDateClass();
       } catch (err) {
         alert(err.message);
       }
@@ -591,10 +665,30 @@ async function initRegistry() {
 
   document.getElementById('revDate').value = todayIso();
   autoSelectClassForDate(todayIso());
-  document.getElementById('revDate').addEventListener('change', (e) => autoSelectClassForDate(e.target.value));
+  document.getElementById('revDate').addEventListener('change', (e) => {
+    autoSelectClassForDate(e.target.value);
+    loadRevenueEntryForDateClass().catch(err => alert(err.message));
+  });
+  document.getElementById('revClass').addEventListener('change', () => {
+    loadRevenueEntryForDateClass().catch(err => alert(err.message));
+  });
+  document.getElementById('attendanceSearch').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const q = e.target.value.trim().toLowerCase();
+    if (!q) return;
+    const checkboxes = Array.from(document.querySelectorAll('#attendanceList input[type=checkbox]'));
+    const match = checkboxes.find(cb => !cb.checked && cb.dataset.name.includes(q));
+    if (match) {
+      match.checked = true;
+      updateAttendanceCount();
+      match.scrollIntoView({ block: 'nearest' });
+    }
+    e.target.value = '';
+  });
 
   try {
-    await Promise.all([renderDashboard(), renderStudentsTable(), renderRevenueTable(), renderTrends()]);
+    await Promise.all([renderDashboard(), renderStudentsTable(), renderRevenueTable(), renderTrends(), loadRevenueEntryForDateClass()]);
   } catch (err) {
     alert(err.message);
   }
@@ -617,17 +711,22 @@ async function initRegistry() {
     const submitBtn = e.target.querySelector('button[type=submit]');
     submitBtn.disabled = true;
     try {
-      await addRevenueEntry({
+      const attendeeIds = Array.from(document.querySelectorAll('#attendanceList input[type=checkbox]:checked')).map(cb => cb.value);
+      await upsertRevenueEntry({
+        id: currentRevenueEntry ? currentRevenueEntry.id : undefined,
+        createdAt: currentRevenueEntry ? currentRevenueEntry.createdAt : undefined,
         date: document.getElementById('revDate').value,
         classKey: document.getElementById('revClass').value,
         amount: parseFloat(document.getElementById('revAmount').value) || 0,
-        studentCount: parseInt(document.getElementById('revCount').value, 10) || 0,
+        studentCount: attendeeIds.length,
+        attendeeIds,
         note: document.getElementById('revNote').value.trim(),
       });
-      document.getElementById('revenueForm').reset();
-      document.getElementById('revDate').value = todayIso();
-      autoSelectClassForDate(todayIso());
       await Promise.all([renderRevenueTable(), renderDashboard(), renderTrends()]);
+      // Reload rather than reset: the form stays on this same date & class
+      // in "edit" mode so a correction (e.g. a late arrival) can be made
+      // right away without hunting for the entry again.
+      await loadRevenueEntryForDateClass();
     } catch (err) {
       alert(err.message);
     } finally {

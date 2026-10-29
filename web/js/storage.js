@@ -146,6 +146,7 @@ function entryToRow(e) {
     class_key: e.classKey || '',
     amount: e.amount || 0,
     student_count: e.studentCount || 0,
+    attendee_ids: e.attendeeIds || [],
     note: e.note || '',
     created_at: e.createdAt,
   };
@@ -158,6 +159,7 @@ function rowToEntry(r) {
     classKey: r.class_key,
     amount: Number(r.amount) || 0,
     studentCount: r.student_count,
+    attendeeIds: r.attendee_ids || [],
     note: r.note,
     createdAt: r.created_at,
   };
@@ -168,11 +170,19 @@ async function getRevenueEntries() {
   return (rows || []).map(rowToEntry);
 }
 
-async function addRevenueEntry(entry) {
-  const toSave = { ...entry, id: uid(), createdAt: Date.now() };
+async function getRevenueEntryByDateAndClass(date, classKey) {
+  const entries = await getRevenueEntries();
+  return entries.find(e => e.date === date && e.classKey === classKey) || null;
+}
+
+// Insert-or-update: pass an existing entry's id (and createdAt) to correct
+// it in place (e.g. a late student ticked on after the entry was first
+// saved), or omit id to log a brand new one.
+async function upsertRevenueEntry(entry) {
+  const toSave = { ...entry, id: entry.id || uid(), createdAt: entry.createdAt || Date.now() };
   const rows = await supabaseRequest('revenue_entries', {
     method: 'POST',
-    headers: { Prefer: 'return=representation' },
+    headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify([entryToRow(toSave)]),
   });
   return rows && rows[0] ? rowToEntry(rows[0]) : toSave;

@@ -29,9 +29,15 @@ create table if not exists revenue_entries (
   class_key text default '',
   amount numeric default 0,
   student_count int default 0,
+  attendee_ids jsonb not null default '[]'::jsonb,
   note text default '',
   created_at bigint
 );
+
+-- Upgrading a database created before attendee tracking was added: the
+-- `create table if not exists` above is a no-op on an existing table, so
+-- the new column needs its own idempotent statement.
+alter table revenue_entries add column if not exists attendee_ids jsonb not null default '[]'::jsonb;
 
 alter table members enable row level security;
 alter table revenue_entries enable row level security;

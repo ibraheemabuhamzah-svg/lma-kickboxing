@@ -42,7 +42,7 @@ A member can also delete any of their own profiles from the Member Area's profil
 - From the Registry, the admin can:
   - Set/change a member's **grade/belt** (the only profile field the Registry edits directly today).
   - Delete a student's profile (with a confirmation prompt) from the Students tab.
-  - Enter the day's revenue after each class (date, class/session, amount, optional note) — the class/session dropdown pre-selects to whatever is scheduled on the chosen date.
+  - Enter the day's revenue and attendance after each class: pick the date (class/session pre-selects to whatever is scheduled that day) and tick which students showed up from that class's roster — typing part of a name into the quick-add box and pressing Enter ticks the first unticked match, handy for a long roster. "Number of students present" is derived from the ticks, not typed in. Picking a date & class that already has an entry loads it back into the form (amount, note, who was ticked) instead of starting blank, so it can be corrected at any time — e.g. ticking a student who arrives late — by re-saving; the "Recent Entries" list also has an Edit button that jumps straight into editing an older entry this way. Enter the amount collected and an optional note alongside the attendance.
   - View dashboards/statistics (see below).
 
 ### Registry statistics & dashboards
@@ -78,7 +78,7 @@ These fixed sessions are the unit used for "revenue entry after each class" and 
 ## 4. Data Model Notes
 
 - `members` table: one row per profile (id, all fields above, created_at/updated_at as epoch-millis). Web's `class`/Android's `classCategory` field is stored as `class_category` — a class-*category* key, distinct from `revenue_entries.class_key` below.
-- `revenue_entries` table: `{ id, date, class_key (schedule-slot id, e.g. "mon-18-teens"), amount, student_count, note, created_at }`.
+- `revenue_entries` table: `{ id, date, class_key (schedule-slot id, e.g. "mon-18-teens"), amount, student_count, attendee_ids (member ids ticked present — student_count is just this list's length, kept as its own column for quick reads/charts), note, created_at }`. At most one entry per `(date, class_key)` pair in practice — logging the same date & class again edits that same row (upsert by `id`, looked up by date+class) rather than creating a duplicate.
 - Class/schedule identity is a stable key (e.g. `mon-18-teens`) matching the schedule table above, so week-over-week comparisons are reliable regardless of calendar date.
 - Registry password gate is a session-scoped unlock after correct password entry (web: `sessionStorage`; Android: an in-memory flag that resets when the app process dies, with an explicit "Lock" button) — it gates the UI only, not the underlying Supabase data (see Storage above).
 
