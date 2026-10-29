@@ -218,10 +218,13 @@ class ProfileFormActivity : AppCompatActivity() {
 
                 Store.upsertMember(this@ProfileFormActivity, member)
                 Toast.makeText(this@ProfileFormActivity, "Profile saved successfully.", Toast.LENGTH_SHORT).show()
+                // Back to the app's very first screen (Member Area / Registry
+                // chooser) rather than the profiles list, clearing the whole
+                // back stack so Back from there exits the app instead of
+                // stepping through Lookup/ProfileForm again.
                 startActivity(
-                    Intent(this@ProfileFormActivity, ProfilesListActivity::class.java)
-                        .putExtra("prefix", member.phonePrefix)
-                        .putExtra("number", member.phoneNumber)
+                    Intent(this@ProfileFormActivity, MainActivity::class.java)
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 )
                 finish()
             } catch (e: Exception) {

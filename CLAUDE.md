@@ -13,7 +13,7 @@ A web application for managing a Muay Thai / Kickboxing club. Members can create
 
 ## 1. Member Profile
 
-A phone number is a **contact**, not a unique member key: looking it up shows every profile linked to it, and the same contact can have several profiles (e.g. one parent registering multiple children). Each profile has its own fields below. After saving a profile ("Validate"), the member sees the list of profiles under that contact with the choice to create another or go back to the home screen.
+A phone number is a **contact**, not a unique member key: looking it up shows every profile linked to it, and the same contact can have several profiles (e.g. one parent registering multiple children). Each profile has its own fields below. After saving a profile ("Validate"): on web, the member sees the list of profiles under that contact with the choice to create another or go back to the home screen; **on Android, Validate instead returns straight to the app's first screen** (the Member Area / Registry chooser), clearing the back stack.
 
 | Field | Notes |
 |---|---|

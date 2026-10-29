@@ -91,7 +91,7 @@
 
         <Button android:id="@+id/btnSave" style="@style/Widget.MaterialComponents.Button"
             android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="24dp"
-            android:backgroundTint="@color/red" android:text="Save profile" android:textAllCaps="false" />
+            android:backgroundTint="@color/red" android:text="Validate" android:textAllCaps="false" />
 
     </LinearLayout>
 </ScrollView>
