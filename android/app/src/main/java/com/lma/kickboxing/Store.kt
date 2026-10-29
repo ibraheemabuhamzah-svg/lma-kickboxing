@@ -149,6 +149,7 @@ object Store {
         put("class_key", e.classKey)
         put("amount", e.amount)
         put("student_count", e.studentCount)
+        put("attendee_ids", JSONArray(e.attendeeIds))
         put("note", e.note)
         put("created_at", e.createdAt)
     }
@@ -159,6 +160,7 @@ object Store {
         classKey = o.optString("class_key"),
         amount = o.optDouble("amount", 0.0),
         studentCount = o.optInt("student_count"),
+        attendeeIds = o.optJSONArray("attendee_ids")?.let { arr -> (0 until arr.length()).map { arr.getString(it) } } ?: emptyList(),
         note = o.optString("note"),
         createdAt = o.optLong("created_at"),
     )
@@ -169,14 +171,22 @@ object Store {
         return (0 until arr.length()).map { jsonToEntry(arr.getJSONObject(it)) }
     }
 
-    suspend fun addRevenueEntry(ctx: Context, entry: RevenueEntry) {
+    suspend fun getRevenueEntryByDateAndClass(ctx: Context, date: String, classKey: String): RevenueEntry? =
+        getRevenueEntries(ctx).find { it.date == date && it.classKey == classKey }
+
+    // Insert-or-update: pass an existing entry's id (and createdAt) to
+    // correct it in place (e.g. a late student ticked on after the entry
+    // was first saved), or leave id blank to log a brand new one.
+    suspend fun upsertRevenueEntry(ctx: Context, entry: RevenueEntry): RevenueEntry {
         val body = JSONArray().put(entryToJson(entry)).toString()
-        request(
+        val text = request(
             "revenue_entries",
             method = "POST",
             body = body,
-            extraHeaders = mapOf("Prefer" to "return=representation"),
+            extraHeaders = mapOf("Prefer" to "resolution=merge-duplicates,return=representation"),
         )
+        val arr = JSONArray(text)
+        return if (arr.length() > 0) jsonToEntry(arr.getJSONObject(0)) else entry
     }
 
     suspend fun deleteRevenueEntry(ctx: Context, id: String) {

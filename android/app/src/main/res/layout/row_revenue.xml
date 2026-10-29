@@ -13,6 +13,8 @@
             <TextView android:id="@+id/tvSession" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/ink" />
             <TextView android:id="@+id/tvDetails" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="@color/muted" />
         </LinearLayout>
+        <Button android:id="@+id/btnEdit" style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Edit" android:textAllCaps="false" />
         <Button android:id="@+id/btnDelete" style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Delete" android:textAllCaps="false" android:textColor="@color/red" />
     </LinearLayout>

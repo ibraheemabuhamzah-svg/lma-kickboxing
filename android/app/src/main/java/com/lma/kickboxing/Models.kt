@@ -1,5 +1,6 @@
 package com.lma.kickboxing
 
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 
@@ -73,12 +74,14 @@ data class RevenueEntry(
     var classKey: String = "",
     var amount: Double = 0.0,
     var studentCount: Int = 0,
+    var attendeeIds: List<String> = emptyList(),
     var note: String = "",
     var createdAt: Long = System.currentTimeMillis(),
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id); put("date", date); put("classKey", classKey); put("amount", amount)
-        put("studentCount", studentCount); put("note", note); put("createdAt", createdAt)
+        put("studentCount", studentCount); put("attendeeIds", JSONArray(attendeeIds))
+        put("note", note); put("createdAt", createdAt)
     }
 
     companion object {
@@ -88,6 +91,7 @@ data class RevenueEntry(
             classKey = o.optString("classKey"),
             amount = o.optDouble("amount", 0.0),
             studentCount = o.optInt("studentCount"),
+            attendeeIds = o.optJSONArray("attendeeIds")?.let { arr -> (0 until arr.length()).map { arr.getString(it) } } ?: emptyList(),
             note = o.optString("note"),
             createdAt = o.optLong("createdAt"),
         )

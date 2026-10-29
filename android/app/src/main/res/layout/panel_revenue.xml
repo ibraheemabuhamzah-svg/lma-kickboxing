@@ -10,8 +10,8 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
         android:background="@drawable/bg_card" android:padding="16dp" android:layout_marginBottom="16dp">
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Log Today's Revenue &amp; Attendance" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="After each class, enter how much money you collected and how many students showed up. Do this once per class, right after it ends, so weekly trends stay accurate." android:textSize="12sp" android:textColor="@color/muted" android:layout_marginBottom="12dp" />
+        <TextView android:id="@+id/tvRevenueFormTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Log Today's Revenue &amp; Attendance" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ink" />
+        <TextView android:id="@+id/tvRevenueFormHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="After each class, tick who showed up and enter how much money you collected. Do this once per class, right after it ends, so weekly trends stay accurate." android:textSize="12sp" android:textColor="@color/muted" android:layout_marginBottom="12dp" />
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Date" android:textStyle="bold" android:textSize="13sp" />
         <Button android:id="@+id/btnRevDate" style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -23,8 +23,14 @@
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Amount collected" android:textStyle="bold" android:textSize="13sp" />
         <EditText android:id="@+id/editRevAmount" style="@style/FormInput" android:inputType="numberDecimal" android:hint="0.00" />
 
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Students present" android:textStyle="bold" android:textSize="13sp" />
+        <EditText android:id="@+id/editAttendanceSearch" style="@style/FormInput" android:hint="Type a name and press Enter to tick them"
+            android:inputType="text" android:imeOptions="actionDone" android:layout_marginBottom="8dp" />
+        <LinearLayout android:id="@+id/attendanceList" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="8dp" android:layout_marginBottom="12dp" />
+
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Number of students present" android:textStyle="bold" android:textSize="13sp" />
-        <EditText android:id="@+id/editRevCount" style="@style/FormInput" android:inputType="number" />
+        <EditText android:id="@+id/editRevCount" style="@style/FormInput" android:inputType="number" android:enabled="false" />
 
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Note (optional)" android:textStyle="bold" android:textSize="13sp" />
         <EditText android:id="@+id/editRevNote" style="@style/FormInput" />

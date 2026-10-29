@@ -8,12 +8,15 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -40,6 +43,11 @@ class RegistryActivity : AppCompatActivity() {
     private var searchRunnable: Runnable? = null
     private var lastDashboardMembers: List<Member> = emptyList()
     private var lastDashboardRevenue: List<RevenueEntry> = emptyList()
+    // The entry currently loaded into the revenue form, if the chosen date
+    // & class already has one logged — editing it (e.g. ticking a late
+    // arrival) then corrects that same row instead of creating a duplicate.
+    // null means the form is building a brand new entry.
+    private var currentRevenueEntry: RevenueEntry? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +78,7 @@ class RegistryActivity : AppCompatActivity() {
                 renderStudents()
                 renderRevenueList()
                 renderTrends()
+                loadRevenueEntryForDateClass()
             } catch (e: Exception) {
                 Toast.makeText(this@RegistryActivity, e.message, Toast.LENGTH_LONG).show()
             }
@@ -499,6 +508,68 @@ class RegistryActivity : AppCompatActivity() {
         if (idx >= 0) binding.panelRevenue.spinnerRevClass.setSelection(idx)
     }
 
+    // Students eligible for the selected class (coaches don't attend as
+    // students, so they're excluded), with whoever is already marked
+    // present pre-ticked.
+    private suspend fun renderAttendanceList(classCategory: String, presentIds: List<String>) {
+        val p = binding.panelRevenue
+        val members = Store.getMembers(this)
+            .filter { it.role != "coach" && it.classCategory == classCategory }
+            .sortedBy { "${it.firstName} ${it.lastName}" }
+        p.attendanceList.removeAllViews()
+        if (members.isEmpty()) {
+            val tv = TextView(this).apply {
+                text = "No students in this class yet."
+                setTextColor(ContextCompat.getColor(this@RegistryActivity, R.color.muted))
+                textSize = 13f
+            }
+            p.attendanceList.addView(tv)
+        } else {
+            members.forEach { m ->
+                val cb = CheckBox(this).apply {
+                    text = "${m.firstName} ${m.lastName}"
+                    tag = m.id
+                    isChecked = presentIds.contains(m.id)
+                    setOnCheckedChangeListener { _, _ -> updateAttendanceCount() }
+                }
+                p.attendanceList.addView(cb)
+            }
+        }
+        updateAttendanceCount()
+    }
+
+    private fun updateAttendanceCount() {
+        val p = binding.panelRevenue
+        val count = (0 until p.attendanceList.childCount).count { i ->
+            (p.attendanceList.getChildAt(i) as? CheckBox)?.isChecked == true
+        }
+        p.editRevCount.setText(count.toString())
+    }
+
+    // Looks up whether the chosen date & class already has a logged entry
+    // and loads it into the form for editing (amount, note, who was ticked
+    // present) instead of starting blank — this is what makes the log
+    // editable at any time, e.g. to tick a student who arrived late.
+    private suspend fun loadRevenueEntryForDateClass() {
+        val p = binding.panelRevenue
+        val slot = Constants.SCHEDULE[p.spinnerRevClass.selectedItemPosition]
+        val existing = try {
+            Store.getRevenueEntryByDateAndClass(this, revDateIso, slot.key)
+        } catch (e: Exception) {
+            onDataError(e)
+            null
+        }
+        currentRevenueEntry = existing
+        p.editRevAmount.setText(if (existing != null) "%.2f".format(existing.amount) else "")
+        p.editRevNote.setText(existing?.note ?: "")
+        renderAttendanceList(slot.classKey, existing?.attendeeIds ?: emptyList())
+        p.btnSaveRevenue.text = if (existing != null) "Update entry" else "Save entry"
+        p.tvRevenueFormHint.text = if (existing != null)
+            "Editing the entry already logged for this date & class — tick a late arrival or fix the amount any time."
+        else
+            "After each class, tick who showed up and enter how much money you collected. Do this once per class, right after it ends, so weekly trends stay accurate."
+    }
+
     private fun setupRevenuePanel() {
         val p = binding.panelRevenue
         p.spinnerRevClass.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, Constants.SCHEDULE.map { "${it.day} ${it.time} — ${it.label}" })
@@ -512,7 +583,34 @@ class RegistryActivity : AppCompatActivity() {
                 revDateIso = "%04d-%02d-%02d".format(y, mo + 1, day)
                 p.btnRevDate.text = displayDate(revDateIso)
                 autoSelectClassForDate(revDateIso)
+                lifecycleScope.launch { try { loadRevenueEntryForDateClass() } catch (e: Exception) { onDataError(e) } }
             }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+        }
+
+        p.spinnerRevClass.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                lifecycleScope.launch { try { loadRevenueEntryForDateClass() } catch (e: Exception) { onDataError(e) } }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        // Quick attendance entry: type (part of) a name and hit Enter/Done
+        // to tick the first unticked match, instead of hunting for them in
+        // a long list.
+        p.editAttendanceSearch.setOnEditorActionListener { _, actionId, event ->
+            val isEnter = actionId == EditorInfo.IME_ACTION_DONE ||
+                (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
+            if (isEnter) {
+                val q = p.editAttendanceSearch.text.toString().trim().lowercase()
+                if (q.isNotEmpty()) {
+                    val match = (0 until p.attendanceList.childCount)
+                        .mapNotNull { p.attendanceList.getChildAt(it) as? CheckBox }
+                        .firstOrNull { !it.isChecked && it.text.toString().lowercase().contains(q) }
+                    match?.isChecked = true
+                }
+                p.editAttendanceSearch.text.clear()
+                true
+            } else false
         }
 
         p.btnSaveRevenue.setOnClickListener {
@@ -521,27 +619,31 @@ class RegistryActivity : AppCompatActivity() {
                 Toast.makeText(this, "Please enter a valid amount.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            val attendeeIds = (0 until p.attendanceList.childCount)
+                .mapNotNull { p.attendanceList.getChildAt(it) as? CheckBox }
+                .filter { it.isChecked }
+                .map { it.tag as String }
             val entry = RevenueEntry(
+                id = currentRevenueEntry?.id ?: java.util.UUID.randomUUID().toString(),
                 date = revDateIso,
                 classKey = Constants.SCHEDULE[p.spinnerRevClass.selectedItemPosition].key,
                 amount = amount,
-                studentCount = p.editRevCount.text.toString().toIntOrNull() ?: 0,
+                studentCount = attendeeIds.size,
+                attendeeIds = attendeeIds,
                 note = p.editRevNote.text.toString().trim(),
+                createdAt = currentRevenueEntry?.createdAt ?: System.currentTimeMillis(),
             )
             p.btnSaveRevenue.isEnabled = false
             lifecycleScope.launch {
                 try {
-                    Store.addRevenueEntry(this@RegistryActivity, entry)
-                    p.editRevAmount.text.clear()
-                    p.editRevCount.text.clear()
-                    p.editRevNote.text.clear()
-                    val todayCal = Calendar.getInstance()
-                    revDateIso = "%04d-%02d-%02d".format(todayCal.get(Calendar.YEAR), todayCal.get(Calendar.MONTH) + 1, todayCal.get(Calendar.DAY_OF_MONTH))
-                    p.btnRevDate.text = displayDate(revDateIso)
-                    autoSelectClassForDate(revDateIso)
+                    Store.upsertRevenueEntry(this@RegistryActivity, entry)
                     renderRevenueList()
                     renderDashboard()
                     renderTrends()
+                    // Reload rather than reset: stays on this date & class in
+                    // "edit" mode so a correction (e.g. a late arrival) can
+                    // be made right away without hunting for the entry again.
+                    loadRevenueEntryForDateClass()
                 } catch (e: Exception) {
                     onDataError(e)
                 } finally {
@@ -562,6 +664,20 @@ class RegistryActivity : AppCompatActivity() {
             val row = RowRevenueBinding.inflate(inflater, p.revenueList, false)
             row.tvSession.text = "${displayDate(e.date)} — ${Constants.scheduleLabel(e.classKey)}"
             row.tvDetails.text = "${e.studentCount} students · ${"%.2f".format(e.amount)}" + if (e.note.isNotEmpty()) " · ${e.note}" else ""
+            row.btnEdit.setOnClickListener {
+                revDateIso = e.date
+                binding.panelRevenue.btnRevDate.text = displayDate(revDateIso)
+                val idx = Constants.SCHEDULE.indexOfFirst { it.key == e.classKey }
+                if (idx >= 0) binding.panelRevenue.spinnerRevClass.setSelection(idx)
+                binding.tabLayout.getTabAt(2)?.select()
+                lifecycleScope.launch {
+                    try {
+                        loadRevenueEntryForDateClass()
+                    } catch (ex: Exception) {
+                        onDataError(ex)
+                    }
+                }
+            }
             row.btnDelete.setOnClickListener {
                 lifecycleScope.launch {
                     try {
@@ -569,6 +685,10 @@ class RegistryActivity : AppCompatActivity() {
                         renderRevenueList()
                         renderDashboard()
                         renderTrends()
+                        // In case the deleted row was the one loaded into the
+                        // form, drop back to "new entry" mode instead of
+                        // still offering to "update" it.
+                        loadRevenueEntryForDateClass()
                     } catch (ex: Exception) {
                         onDataError(ex)
                     }
